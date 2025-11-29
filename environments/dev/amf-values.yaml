@@ -1,0 +1,60 @@
+# Development Environment Configuration for AMF
+replicaCount: 1
+
+image:
+  repository: your-registry/5g-amf
+  pullPolicy: Always
+  tag: "2.0.0-dev"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+
+# Development-specific AMF Configuration
+amfConfig:
+  guami:
+    plmnId:
+      mcc: "001"
+      mnc: "01"
+    amfRegionId: "01"
+    amfSetId: "001"
+    amfPointer: "01"
+  servedGuamiList:
+    - plmnId:
+        mcc: "001"
+        mnc: "01"
+      amfRegionId: "01"
+      amfSetId: "001"
+      amfPointer: "01"
+  supportedTAList:
+    - plmnId:
+        mcc: "001"
+        mnc: "01"
+      tac: "000001"
+  networkName:
+    full: "5G Telco Cloud Development Network"
+    short: "5G-TCN-DEV"
+  nfServices:
+    namf_communication:
+      port: 8080
+      path: "/namf-comm/v1"
+    namf_eventexposure:
+      port: 8080
+      path: "/namf-evts/v1"
+
+# Relaxed network policy for development
+networkPolicy:
+  enabled: false
+
+# Development-specific pod annotations
+podAnnotations:
+  telco.5g/environment: "development"
+  telco.5g/network-function: "amf"
+  telco.5g/debug-mode: "true"

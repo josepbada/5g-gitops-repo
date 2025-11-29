@@ -1,0 +1,160 @@
+# AMF Deployment Configuration
+replicaCount: 2
+
+image:
+  repository: nginx
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "amf-sa"
+
+podAnnotations:
+  telco.5g/network-function: "amf"
+  telco.5g/release-version: "2.0.0"
+
+podSecurityContext:
+  runAsNonRoot: false
+  runAsUser: 0
+  fsGroup: 0
+
+securityContext:
+  capabilities:
+    drop:
+    - SETUID
+    - SETGID
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: true
+  
+extraInitContainers:
+  - name: fix-nginx-permissions
+    image: busybox
+    command: ["sh", "-c", "chmod -R 777 /var/cache/nginx"]
+    volumeMounts:
+      - name: nginx-cache
+        mountPath: /var/cache/nginx
+
+extraVolumeMounts:
+  - name: nginx-cache
+    mountPath: /var/cache/nginx
+
+extraVolumes:
+  - name: nginx-cache
+    emptyDir: {}
+service:
+  type: ClusterIP
+  ngapPort: 38412
+  httpPort: 8080
+  annotations:
+    telco.5g/protocol: "ngap"
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - amf-5g
+        topologyKey: kubernetes.io/hostname
+
+# AMF Specific Configuration
+amfConfig:
+  guami:
+    plmnId:
+      mcc: "001"
+      mnc: "01"
+    amfRegionId: "01"
+    amfSetId: "001"
+    amfPointer: "01"
+  servedGuamiList:
+    - plmnId:
+        mcc: "001"
+        mnc: "01"
+      amfRegionId: "01"
+      amfSetId: "001"
+      amfPointer: "01"
+  supportedTAList:
+    - plmnId:
+        mcc: "001"
+        mnc: "01"
+      tac: "000001"
+  networkName:
+    full: "5G Telco Cloud Network"
+    short: "5G-TCN"
+  nfServices:
+    namf_communication:
+      port: 8080
+      path: "/namf-comm/v1"
+    namf_eventexposure:
+      port: 8080
+      path: "/namf-evts/v1"
+
+# Network Policy Configuration
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: telco-core-5g
+      - podSelector:
+          matchLabels:
+            app: gnb-5g
+      ports:
+      - protocol: TCP
+        port: 38412
+      - protocol: TCP
+        port: 8080
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: telco-core-5g
+      - podSelector:
+          matchLabels:
+            app: smf-5g
+      ports:
+      - protocol: TCP
+        port: 8080
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: telco-core-5g
+      - podSelector:
+          matchLabels:
+            app: ausf-5g
+      ports:
+      - protocol: TCP
+        port: 8080
