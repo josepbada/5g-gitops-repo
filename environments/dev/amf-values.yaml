@@ -1,5 +1,5 @@
 # Development Environment Configuration for AMF
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: nginx
