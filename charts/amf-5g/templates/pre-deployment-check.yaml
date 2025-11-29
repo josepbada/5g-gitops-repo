@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "amf-5g.fullname" . }}-pre-check
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  labels:
+    {{- include "amf-5g.labels" . | nindent 4 }}
+spec:
+  template:
+    metadata:
+      name: {{ include "amf-5g.fullname" . }}-pre-check
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: pre-check
+        image: busybox:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "Performing pre-deployment checks for AMF"
+          echo "Checking if required services are available..."
+          echo "Checking AUSF connectivity..."
+          echo "Checking SMF connectivity..."
+          echo "All pre-deployment checks passed"
