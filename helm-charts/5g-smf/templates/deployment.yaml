@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "5g-smf.fullname" . }}
+  labels:
+    {{- include "5g-smf.labels" . | nindent 4 }}
+    component: {{ .Values.labels.component }}
+    plane: {{ .Values.labels.plane }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "5g-smf.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "5g-smf.selectorLabels" . | nindent 8 }}
+        component: {{ .Values.labels.component }}
+        plane: {{ .Values.labels.plane }}
+    spec:
+      containers:
+      - name: smf
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: SMF_ID
+          value: {{ .Values.smf.config.smfId | quote }}
+        - name: PLMN_ID
+          value: {{ .Values.smf.config.plmnId | quote }}
+        - name: DNN
+          value: {{ .Values.smf.config.dnn | quote }}
+        - name: SST
+          value: {{ .Values.smf.config.sNssai.sst | quote }}
+        - name: SD
+          value: {{ .Values.smf.config.sNssai.sd | quote }}
+        - name: UPF_ADDRESS
+          value: {{ .Values.smf.config.upfAddress | quote }}
+        - name: AMF_ADDRESS
+          value: {{ .Values.smf.config.amfAddress | quote }}
+        - name: NRF_ADDRESS
+          value: {{ .Values.smf.config.nrfAddress | quote }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
