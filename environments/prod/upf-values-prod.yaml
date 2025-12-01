@@ -1,0 +1,23 @@
+# Production environment overrides for UPF
+replicaCount: 2  # Redundancy for production
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 512Mi
+  requests:
+    cpu: 150m
+    memory: 256Mi
+
+upf:
+  config:
+    upfId: "upf-prod-001"
+    n3Interface: "192.168.30.10"
+    n4Interface: "192.168.30.11"
+    n6Interface: "192.168.30.12"
+    dnn: "internet-prod"
+
+labels:
+  environment: production
+  component: upf
+  network: 5g-core
