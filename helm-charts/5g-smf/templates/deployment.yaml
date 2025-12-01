@@ -45,15 +45,15 @@ spec:
           value: {{ .Values.smf.config.nrfAddress | quote }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: http
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: http
-          initialDelaySeconds: 10
-          periodSeconds: 5
+  #      livenessProbe:
+  #        httpGet:
+  #         path: /health
+  #          port: http
+  #        initialDelaySeconds: 30
+  #        periodSeconds: 10
+  #      readinessProbe:
+  #        httpGet:
+  #          path: /ready
+  #          port: http
+  #        initialDelaySeconds: 10
+  #       periodSeconds: 5

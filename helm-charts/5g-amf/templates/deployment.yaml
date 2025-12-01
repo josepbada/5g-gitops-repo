@@ -55,17 +55,17 @@ spec:
           value: {{ .Values.amf.config.udmAddress | quote }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: http
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: http
-          initialDelaySeconds: 15
-          periodSeconds: 5
-          timeoutSeconds: 3
+  #      livenessProbe:
+  #        httpGet:
+  #          path: /health
+  #          port: http
+  #        initialDelaySeconds: 30
+  #        periodSeconds: 10
+  #        timeoutSeconds: 5
+  #      readinessProbe:
+  #        httpGet:
+  #          path: /ready
+  #          port: http
+  #        initialDelaySeconds: 15
+  #        periodSeconds: 5
+  #       timeoutSeconds: 3
