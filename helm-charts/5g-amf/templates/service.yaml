@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "5g-amf.fullname" . }}
+  name: amf-{{ include "5g-amf.fullname" . }}
   labels:
     {{- include "5g-amf.labels" . | nindent 4 }}
 spec:
