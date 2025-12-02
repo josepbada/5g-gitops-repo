@@ -15,7 +15,7 @@ upf:
     n3Interface: "192.168.10.10"
     n4Interface: "192.168.10.11"
     n6Interface: "192.168.10.12"
-    dnn: "internet-dev"
+    dnn: "internet-dev-v2"
 
 labels:
   environment: development
