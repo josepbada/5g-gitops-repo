@@ -1,5 +1,5 @@
 # Development environment overrides for AMF
-replicaCount: 1  # Only 1 replica in dev
+replicaCount: 2  # Only 1 replica in dev
 
 resources:
   limits:
