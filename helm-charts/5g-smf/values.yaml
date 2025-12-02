@@ -30,6 +30,9 @@ smf:
     upfAddress: "5g-upf:8805"  # Connection to UPF
     amfAddress: "5g-amf:8888"  # Connection to AMF
     nrfAddress: "nrf-service:8080"  # Network Repository Function
+    sessionAmbr:
+      uplink: "1000Mbps"
+      downlink: "2000Mbps"
 
 labels:
   component: smf
