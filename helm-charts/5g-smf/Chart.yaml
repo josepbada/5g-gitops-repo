@@ -2,8 +2,8 @@ apiVersion: v2
 name: 5g-smf
 description: A Helm chart for 5G Session Management Function (SMF)
 type: application
-version: 1.1.0  # Incremented from 1.0.0
-appVersion: "1.1"
+version: 1.0.0  # Incremented from 1.0.0
+appVersion: "1.0"
 keywords:
   - 5g
   - smf

@@ -43,10 +43,7 @@ spec:
           value: {{ .Values.smf.config.amfAddress | quote }}
         - name: NRF_ADDRESS
           value: {{ .Values.smf.config.nrfAddress | quote }}
-		- name: SESSION_AMBR_UPLINK
-          value: {{ .Values.smf.config.sessionAmbr.uplink | quote }}
-        - name: SESSION_AMBR_DOWNLINK
-          value: {{ .Values.smf.config.sessionAmbr.downlink | quote }}  
+
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
   #      livenessProbe:
