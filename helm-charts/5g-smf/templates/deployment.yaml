@@ -46,6 +46,8 @@ spec:
 
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
+# Add to the metadata.labels section
+    version: stable
   #      livenessProbe:
   #        httpGet:
   #         path: /health

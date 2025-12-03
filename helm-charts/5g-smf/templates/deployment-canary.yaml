@@ -1,0 +1,38 @@
+{{- if .Values.canary.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "5g-smf.fullname" . }}-canary
+  labels:
+    {{- include "5g-smf.labels" . | nindent 4 }}
+    version: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "5g-smf.selectorLabels" . | nindent 6 }}
+      version: canary
+  template:
+    metadata:
+      labels:
+        {{- include "5g-smf.selectorLabels" . | nindent 8 }}
+        version: canary
+    spec:
+      containers:
+      - name: smf
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: SMF_ID
+          value: {{ .Values.smf.config.smfId }}-canary
+        - name: VERSION
+          value: "canary"
+        - name: PLMN_ID
+          value: {{ .Values.smf.config.plmnId | quote }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+{{- end }}

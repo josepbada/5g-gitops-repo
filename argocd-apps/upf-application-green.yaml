@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: 5g-upf-staging
+  name: 5g-upf-green
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -13,20 +13,14 @@ spec:
     path: helm-charts/5g-upf
     helm:
       valueFiles:
-        - ../../environments/staging/upf-values-staging.yaml
+        - ../../environments/dev/upf-values-dev-green.yaml
+      releaseName: upf-green
   destination:
     server: https://kubernetes.default.svc
-    namespace: telco-5g-staging
+    namespace: telco-5g
   syncPolicy:
     automated:
-      prune: true
+      prune: false  # Don't auto-prune green initially
       selfHeal: true
-      allowEmpty: false
     syncOptions:
-      - CreateNameJContinuarspace=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
+      - CreateNamespace=true
