@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: amf-service
+  namespace: telco-core
+  labels:
+    app: amf
+    component: control-plane
+    nf-type: amf
+  annotations:
+    description: Service for AMF SBI and NGAP interfaces
+    service-type: network-function-service
+spec:
+  selector:
+    app: amf
+  type: ClusterIP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+  ports:
+    - name: sbi
+      port: 80
+      protocol: TCP
+      targetPort: 7777  # Puerto SBI confirmado
+    - name: ngap
+      port: 38412
+      protocol: SCTP
+      targetPort: 38412  # Puerto NGAP confirmado
+    # ELIMINADO: puerto metrics (9090) - no existe en Open5GS AMF

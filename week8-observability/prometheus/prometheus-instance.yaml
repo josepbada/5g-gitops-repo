@@ -1,0 +1,117 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: telco-observability
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/metrics
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["get"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+- kind: ServiceAccount
+  name: prometheus
+  namespace: telco-observability
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-storage
+  namespace: telco-observability
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: hostpath
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: telco-prometheus
+  namespace: telco-observability
+  labels:
+    prometheus: telco
+spec:
+  replicas: 1
+  serviceAccountName: prometheus
+  serviceMonitorSelector:
+    matchLabels:
+      team: telco
+  podMonitorSelector:
+    matchLabels:
+      team: telco
+  ruleSelector:
+    matchLabels:
+      prometheus: telco
+      role: alert-rules
+  resources:
+    requests:
+      cpu: 200m
+      memory: 400Mi
+    limits:
+      cpu: 500m
+      memory: 800Mi
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: hostpath
+  retention: 15d
+  scrapeInterval: 15s
+  evaluationInterval: 15s
+  enableAdminAPI: false
+  logLevel: info
+  alerting:
+    alertmanagers:
+    - namespace: telco-observability
+      name: alertmanager-operated
+      port: web
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: telco-observability
+  labels:
+    prometheus: telco
+spec:
+  type: NodePort
+  ports:
+  - name: web
+    port: 9090
+    targetPort: web
+    nodePort: 30090
+  selector:
+    app.kubernetes.io/name: prometheus
+    prometheus: telco-prometheus

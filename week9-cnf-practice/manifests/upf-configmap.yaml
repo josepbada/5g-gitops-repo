@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: upf-config
+  namespace: telco-core
+  labels:
+    app: upf
+    component: user-plane
+data:
+  upf.yaml: |
+    logger:
+      level: info
+    upf:
+      pfcp:
+        - addr: 0.0.0.0
+      gtpu:
+        - addr: 0.0.0.0
+      subnet:
+        - addr: 10.45.0.1/16
+          dnn: internet
+          dev: ogstun
+      upf_name: UPF

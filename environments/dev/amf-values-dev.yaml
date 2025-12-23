@@ -1,0 +1,24 @@
+# Development environment overrides for AMF
+replicaCount: 2  # Only 1 replica in dev
+
+resources:
+  limits:
+    cpu: 400m
+    memory: 384Mi
+  requests:
+    cpu: 200m
+    memory: 192Mi
+
+amf:
+  config:
+    amfId: "amf-dev-001"
+    amfName: "AMF-Dev-Region-1"
+    region: "dev-region-1"
+    smfAddresses:
+      - "smf-release-5g-smf:8080"
+
+labels:
+  environment: development
+  component: amf
+  plane: control
+  tier: access

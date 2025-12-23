@@ -1,0 +1,212 @@
+# Default Deny Policy - Blocks all traffic by default
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: telco-core
+  annotations:
+    description: "Default deny all ingress and egress traffic"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# Allow MongoDB to receive connections from AMF and SMF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mongodb-allow-from-nfs
+  namespace: telco-core
+  annotations:
+    description: "Allow MongoDB to receive connections from network functions"
+spec:
+  podSelector:
+    matchLabels:
+      app: mongodb
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          component: control-plane
+    ports:
+    - protocol: TCP
+      port: 27017
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          component: control-plane
+    ports:
+    - protocol: TCP
+      port: 27017
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+---
+# Allow AMF to communicate with SMF and MongoDB
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: amf-allow-communication
+  namespace: telco-core
+  annotations:
+    description: "Allow AMF to communicate with SMF and MongoDB"
+spec:
+  podSelector:
+    matchLabels:
+      app: amf
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: smf
+    ports:
+    - protocol: TCP
+      port: 80
+  - ports:
+    - protocol: TCP
+      port: 38412
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mongodb
+    ports:
+    - protocol: TCP
+      port: 27017
+  - to:
+    - podSelector:
+        matchLabels:
+          app: smf
+    ports:
+    - protocol: TCP
+      port: 80
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+---
+# Allow SMF to communicate with AMF, UPF, and MongoDB
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: smf-allow-communication
+  namespace: telco-core
+  annotations:
+    description: "Allow SMF to communicate with AMF, UPF, and MongoDB"
+spec:
+  podSelector:
+    matchLabels:
+      app: smf
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: amf
+    ports:
+    - protocol: TCP
+      port: 80
+  - from:
+    - podSelector:
+        matchLabels:
+          app: upf
+    ports:
+    - protocol: UDP
+      port: 8805
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mongodb
+    ports:
+    - protocol: TCP
+      port: 27017
+  - to:
+    - podSelector:
+        matchLabels:
+          app: amf
+    ports:
+    - protocol: TCP
+      port: 80
+  - to:
+    - podSelector:
+        matchLabels:
+          app: upf
+    ports:
+    - protocol: UDP
+      port: 8805
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+---
+# Allow UPF to communicate with SMF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: upf-allow-communication
+  namespace: telco-core
+  annotations:
+    description: "Allow UPF to communicate with SMF and handle user plane traffic"
+spec:
+  podSelector:
+    matchLabels:
+      app: upf
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: smf
+    ports:
+    - protocol: UDP
+      port: 8805
+  - ports:
+    - protocol: UDP
+      port: 2152
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: smf
+    ports:
+    - protocol: UDP
+      port: 8805
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 169.254.0.0/16

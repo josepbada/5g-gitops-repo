@@ -1,0 +1,33 @@
+# Default values for 5g-upf
+replicaCount: 1
+
+image:
+  repository: nginx  # Using nginx as a placeholder for UPF
+  tag: "1.21-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8805
+  targetPort: 80
+  protocol: UDP
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+upf:
+  config:
+    n3Interface: "192.168.1.10"  # Interface to gNodeB
+    n4Interface: "192.168.2.10"  # Interface to SMF
+    n6Interface: "192.168.3.10"  # Interface to Data Network
+    dnn: "internet"               # Data Network Name
+    upfId: "upf-001"
+
+labels:
+  component: upf
+  network: 5g-core

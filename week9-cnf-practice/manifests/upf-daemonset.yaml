@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: upf
+  namespace: telco-core
+  labels:
+    app: upf
+    component: user-plane
+spec:
+  selector:
+    matchLabels:
+      app: upf
+  template:
+    metadata:
+      labels:
+        app: upf
+        component: user-plane
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: upf
+        image: openverso/open5gs:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "=== UPF Starting ==="
+            echo "Creating tunnel interfaces..."
+            ip tuntap add name ogstun mode tun
+            ip addr add 10.45.0.1/16 dev ogstun
+            ip link set ogstun up
+            echo "Setting up NAT..."
+            iptables -t nat -A POSTROUTING -s 10.45.0.0/16 ! -o ogstun -j MASQUERADE
+            echo "Starting UPF daemon..."
+            /opt/open5gs/bin/open5gs-upfd -c /etc/open5gs/upf.yaml
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - NET_ADMIN
+            - SYS_ADMIN
+        ports:
+        - containerPort: 8805
+          name: pfcp
+          protocol: UDP
+          hostPort: 8805
+        - containerPort: 2152
+          name: gtpu
+          protocol: UDP
+          hostPort: 2152
+        env:
+        - name: UPF_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: upf-config
+          mountPath: /etc/open5gs
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "pgrep -f open5gs-upfd && ip link show ogstun"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "pgrep -f open5gs-upfd && ip link show ogstun"
+          initialDelaySeconds: 45
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "ip link show ogstun"
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 20
+      volumes:
+      - name: upf-config
+        configMap:
+          name: upf-config
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 60

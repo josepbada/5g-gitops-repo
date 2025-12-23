@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: 5g-upf-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/josepbada/5g-gitops-repo.git
+    targetRevision: main
+    path: helm-charts/5g-upf
+    helm:
+      valueFiles:
+        - ../../environments/prod/upf-values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: telco-5g-prod
+  syncPolicy:
+    # Manual sync for production
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: 5g-upf
+description: A Helm chart for 5G User Plane Function (UPF)
+type: application
+version: 1.0.0
+appVersion: "1.0"
+keywords:
+  - 5g
+  - upf
+  - telco
+maintainers:
+  - name: Josep Bada
+    email: your-email@example.com

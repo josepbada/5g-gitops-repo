@@ -1,0 +1,104 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ausf
+  namespace: telco-observability
+  labels:
+    app: ausf
+    nf-type: control-plane
+    team: telco
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ausf
+  template:
+    metadata:
+      labels:
+        app: ausf
+        nf-type: control-plane
+        team: telco
+    spec:
+      containers:
+      - name: ausf
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat > /tmp/metrics.prom << 'EOF'
+          # HELP ausf_auth_requests_total Total authentication requests
+          # TYPE ausf_auth_requests_total counter
+          ausf_auth_requests_total{result="success"} 45678
+          ausf_auth_requests_total{result="failure"} 234
+          
+          # HELP ausf_auth_latency_seconds Authentication processing latency
+          # TYPE ausf_auth_latency_seconds histogram
+          ausf_auth_latency_seconds_bucket{le="0.05"} 23456
+          ausf_auth_latency_seconds_bucket{le="0.1"} 34567
+          ausf_auth_latency_seconds_bucket{le="0.25"} 44567
+          ausf_auth_latency_seconds_bucket{le="0.5"} 45456
+          ausf_auth_latency_seconds_bucket{le="1"} 45834
+          ausf_auth_latency_seconds_bucket{le="+Inf"} 45912
+          ausf_auth_latency_seconds_sum 3456.78
+          ausf_auth_latency_seconds_count 45912
+          
+          # HELP ausf_5g_aka_procedures_total 5G AKA procedures executed
+          # TYPE ausf_5g_aka_procedures_total counter
+          ausf_5g_aka_procedures_total{supi_type="imsi"} 43210
+          ausf_5g_aka_procedures_total{supi_type="nai"} 2468
+          
+          # HELP ausf_auth_failures_by_cause Authentication failures by cause
+          # TYPE ausf_auth_failures_by_cause counter
+          ausf_auth_failures_by_cause{cause="invalid_credentials"} 123
+          ausf_auth_failures_by_cause{cause="network_timeout"} 67
+          ausf_auth_failures_by_cause{cause="sync_failure"} 44
+          
+          # HELP ausf_auth_success_rate Authentication success rate
+          # TYPE ausf_auth_success_rate gauge
+          ausf_auth_success_rate 0.9949
+          EOF
+          
+          while true; do
+            nc -l -p 8084 -q 1 < /tmp/metrics.prom 2>/dev/null || true
+          done
+        ports:
+        - name: metrics
+          containerPort: 8084
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          tcpSocket:
+            port: 8084
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          tcpSocket:
+            port: 8084
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ausf
+  namespace: telco-observability
+  labels:
+    app: ausf
+    nf-type: control-plane
+    team: telco
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8084
+    targetPort: 8084
+    protocol: TCP
+  selector:
+    app: ausf

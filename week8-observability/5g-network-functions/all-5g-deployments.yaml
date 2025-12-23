@@ -1,0 +1,320 @@
+---
+# AMF Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amf
+  namespace: telco-observability
+  labels:
+    app: amf
+    team: telco
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: amf
+  template:
+    metadata:
+      labels:
+        app: amf
+        team: telco
+    spec:
+      containers:
+      - name: amf
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat > /tmp/metrics.txt << 'EOF'
+          # HELP amf_registration_requests Total registration requests received
+          # TYPE amf_registration_requests counter
+          amf_registration_requests{result="success"} 15420
+          amf_registration_requests{result="failure"} 230
+          # HELP amf_active_ue_sessions Currently active UE sessions
+          # TYPE amf_active_ue_sessions gauge
+          amf_active_ue_sessions 8765
+          # HELP amf_handover_count Number of handovers processed
+          # TYPE amf_handover_count counter
+          amf_handover_count{handover_type="N2",result="success"} 3421
+          amf_handover_count{handover_type="N2",result="failure"} 45
+          EOF
+          cd /tmp && python3 -m http.server 8081
+        ports:
+        - name: metrics
+          containerPort: 8081
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        readinessProbe:
+          httpGet:
+            path: /metrics.txt
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /metrics.txt
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: amf
+  namespace: telco-observability
+  labels:
+    app: amf
+    team: telco
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8081
+    targetPort: 8081
+  selector:
+    app: amf
+---
+# SMF Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smf
+  namespace: telco-observability
+  labels:
+    app: smf
+    team: telco
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: smf
+  template:
+    metadata:
+      labels:
+        app: smf
+        team: telco
+    spec:
+      containers:
+      - name: smf
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat > /tmp/metrics.txt << 'EOF'
+          # HELP smf_session_create_requests Total session creation requests
+          # TYPE smf_session_create_requests counter
+          smf_session_create_requests{result="success"} 23456
+          smf_session_create_requests{result="failure"} 345
+          # HELP smf_active_sessions Currently active PDU sessions
+          # TYPE smf_active_sessions gauge
+          smf_active_sessions{session_type="ipv4"} 12345
+          smf_active_sessions{session_type="ipv6"} 3456
+          smf_active_sessions{session_type="ipv4v6"} 2345
+          EOF
+          cd /tmp && python3 -m http.server 8082
+        ports:
+        - name: metrics
+          containerPort: 8082
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        readinessProbe:
+          httpGet:
+            path: /metrics.txt
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /metrics.txt
+            port: 8082
+          initialDelaySeconds: 15
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smf
+  namespace: telco-observability
+  labels:
+    app: smf
+    team: telco
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8082
+    targetPort: 8082
+  selector:
+    app: smf
+---
+# UPF Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upf
+  namespace: telco-observability
+  labels:
+    app: upf
+    team: telco
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: upf
+  template:
+    metadata:
+      labels:
+        app: upf
+        team: telco
+    spec:
+      containers:
+      - name: upf
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat > /tmp/metrics.txt << 'EOF'
+          # HELP upf_packets_received_total Total packets received
+          # TYPE upf_packets_received_total counter
+          upf_packets_received_total{direction="uplink"} 987654321
+          upf_packets_received_total{direction="downlink"} 1234567890
+          # HELP upf_bytes_received_total Total bytes received
+          # TYPE upf_bytes_received_total counter
+          upf_bytes_received_total{direction="uplink"} 123456789012345
+          upf_bytes_received_total{direction="downlink"} 234567890123456
+          # HELP upf_throughput_mbps Current throughput in Mbps
+          # TYPE upf_throughput_mbps gauge
+          upf_throughput_mbps{direction="uplink"} 2340.56
+          upf_throughput_mbps{direction="downlink"} 4567.89
+          EOF
+          cd /tmp && python3 -m http.server 8083
+        ports:
+        - name: metrics
+          containerPort: 8083
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 150m
+            memory: 150Mi
+        readinessProbe:
+          httpGet:
+            path: /metrics.txt
+            port: 8083
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /metrics.txt
+            port: 8083
+          initialDelaySeconds: 15
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upf
+  namespace: telco-observability
+  labels:
+    app: upf
+    team: telco
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8083
+    targetPort: 8083
+  selector:
+    app: upf
+---
+# AUSF Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ausf
+  namespace: telco-observability
+  labels:
+    app: ausf
+    team: telco
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ausf
+  template:
+    metadata:
+      labels:
+        app: ausf
+        team: telco
+    spec:
+      containers:
+      - name: ausf
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat > /tmp/metrics.txt << 'EOF'
+          # HELP ausf_auth_requests_total Total authentication requests
+          # TYPE ausf_auth_requests_total counter
+          ausf_auth_requests_total{result="success"} 45678
+          ausf_auth_requests_total{result="failure"} 234
+          # HELP ausf_auth_latency_seconds Authentication processing latency
+          # TYPE ausf_auth_latency_seconds histogram
+          ausf_auth_latency_seconds_bucket{le="0.05"} 23456
+          ausf_auth_latency_seconds_bucket{le="0.1"} 34567
+          ausf_auth_latency_seconds_bucket{le="+Inf"} 45912
+          # HELP ausf_auth_success_rate Authentication success rate
+          # TYPE ausf_auth_success_rate gauge
+          ausf_auth_success_rate 0.9949
+          EOF
+          cd /tmp && python3 -m http.server 8084
+        ports:
+        - name: metrics
+          containerPort: 8084
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        readinessProbe:
+          httpGet:
+            path: /metrics.txt
+            port: 8084
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /metrics.txt
+            port: 8084
+          initialDelaySeconds: 15
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ausf
+  namespace: telco-observability
+  labels:
+    app: ausf
+    team: telco
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8084
+    targetPort: 8084
+  selector:
+    app: ausf

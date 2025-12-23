@@ -1,0 +1,82 @@
+# Default values for 5g-smf
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: "1.21-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 80
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+smf:
+  config:
+    smfId: "smf-001"
+    plmnId: "20899"  # Public Land Mobile Network ID
+    dnn: "internet"
+    sNssai:
+      sst: 1  # Slice/Service Type
+      sd: "000001"  # Slice Differentiator
+    upfAddress: "5g-upf:8805"  # Connection to UPF
+    amfAddress: "5g-amf:8888"  # Connection to AMF
+    nrfAddress: "nrf-service:8080"  # Network Repository Function
+   
+labels:
+  component: smf
+  network: 5g-core
+  plane: control
+  
+ # Add to existing values.yaml
+canary:
+  enabled: false
+  weight: 10  # Percentage of traffic to canary (10%)
+  
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: "1.21-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 80
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+smf:
+  config:
+    smfId: "smf-001"
+    plmnId: "20899"
+    dnn: "internet"
+    sNssai:
+      sst: 1
+      sd: "000001"
+    upfAddress: "5g-upf:8805"
+    amfAddress: "5g-amf:8888"
+    nrfAddress: "nrf-service:8080"
+    sessionAmbr:
+      uplink: "1000Mbps"
+      downlink: "2000Mbps"
+
+labels:
+  component: smf
+  network: 5g-core
+  plane: control

@@ -1,0 +1,22 @@
+# Development environment overrides for SMF
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 256Mi
+  requests:
+    cpu: 150m
+    memory: 128Mi
+
+smf:
+  config:
+    smfId: "smf-dev-001"
+    plmnId: "20899"
+    upfAddress: "upf-release-5g-upf:8805"
+    amfAddress: "amf-release-5g-amf:8888"
+
+labels:
+  environment: development
+  component: smf
+  plane: control
