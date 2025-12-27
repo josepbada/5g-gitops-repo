@@ -1,0 +1,29 @@
+# Blue version of UPF
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: "1.21-alpine"  # Blue version
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 256Mi
+  requests:
+    cpu: 150m
+    memory: 128Mi
+
+upf:
+  config:
+    upfId: "upf-dev-blue-001"
+    n3Interface: "192.168.10.10"
+    n4Interface: "192.168.10.11"
+    n6Interface: "192.168.10.12"
+    dnn: "internet-dev"
+
+labels:
+  environment: development
+  component: upf
+  network: 5g-core
+  version: blue

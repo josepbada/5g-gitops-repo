@@ -1,0 +1,14 @@
+apiVersion: v2
+name: amf-5g
+description: A Helm chart for 5G Access and Mobility Management Function (AMF)
+type: application
+version: 1.0.0
+appVersion: "2.0.0"
+keywords:
+  - 5g
+  - telco
+  - amf
+  - core-network
+maintainers:
+  - name: Telco Cloud Team
+    email: telco-cloud@example.com

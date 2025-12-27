@@ -1,0 +1,118 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upf
+  namespace: telco-observability
+  labels:
+    app: upf
+    nf-type: user-plane
+    team: telco
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: upf
+  template:
+    metadata:
+      labels:
+        app: upf
+        nf-type: user-plane
+        team: telco
+    spec:
+      containers:
+      - name: upf
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+        - |		
+          cat > /tmp/metrics.prom << 'EOF'
+          # HELP upf_packets_received_total Total packets received
+          # TYPE upf_packets_received_total counter
+          upf_packets_received_total{direction="uplink"} 987654321
+          upf_packets_received_total{direction="downlink"} 1234567890
+          
+          # HELP upf_packets_transmitted_total Total packets transmitted
+          # TYPE upf_packets_transmitted_total counter
+          upf_packets_transmitted_total{direction="uplink"} 987234567
+          upf_packets_transmitted_total{direction="downlink"} 1234123456
+          
+          # HELP upf_bytes_received_total Total bytes received
+          # TYPE upf_bytes_received_total counter
+          upf_bytes_received_total{direction="uplink"} 123456789012345
+          upf_bytes_received_total{direction="downlink"} 234567890123456
+          
+          # HELP upf_bytes_transmitted_total Total bytes transmitted
+          # TYPE upf_bytes_transmitted_total counter
+          upf_bytes_transmitted_total{direction="uplink"} 123412345678901
+          upf_bytes_transmitted_total{direction="downlink"} 234523456789012
+          
+          # HELP upf_packet_loss_rate Packet loss rate percentage
+          # TYPE upf_packet_loss_rate gauge
+          upf_packet_loss_rate{direction="uplink"} 0.042
+          upf_packet_loss_rate{direction="downlink"} 0.036
+          
+          # HELP upf_throughput_mbps Current throughput in Mbps
+          # TYPE upf_throughput_mbps gauge
+          upf_throughput_mbps{direction="uplink"} 2340.56
+          upf_throughput_mbps{direction="downlink"} 4567.89
+          
+          # HELP upf_latency_milliseconds Processing latency
+          # TYPE upf_latency_milliseconds histogram
+          upf_latency_milliseconds_bucket{le="1"} 234567
+          upf_latency_milliseconds_bucket{le="5"} 456789
+          upf_latency_milliseconds_bucket{le="10"} 567890
+          upf_latency_milliseconds_bucket{le="20"} 598765
+          upf_latency_milliseconds_bucket{le="50"} 599876
+          upf_latency_milliseconds_bucket{le="+Inf"} 600000
+          upf_latency_milliseconds_sum 2345678.90
+          upf_latency_milliseconds_count 600000
+          
+          # HELP upf_active_bearers Current number of active bearers
+          # TYPE upf_active_bearers gauge
+          upf_active_bearers 18234
+          EOF
+          
+          while true; do
+            nc -l -p 8083 -q 1 < /tmp/metrics.prom 2>/dev/null || true
+          done
+        ports:
+        - name: metrics
+          containerPort: 8083
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 150m
+            memory: 150Mi
+        livenessProbe:
+          tcpSocket:
+            port: 8083
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          tcpSocket:
+            port: 8083
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upf
+  namespace: telco-observability
+  labels:
+    app: upf
+    nf-type: user-plane
+    team: telco
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8083
+    targetPort: 8083
+    protocol: TCP
+  selector:
+    app: upf

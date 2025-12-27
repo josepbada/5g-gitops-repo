@@ -1,0 +1,271 @@
+================================================================================
+    WEEK 9: CLOUD-NATIVE 5G CORE ARCHITECTURE DIAGRAM
+    Namespace: telco-core | CNI: Calico | Date: December 17, 2025
+================================================================================
+
+External Interfaces:
+┌─────────────────┐                                      ┌──────────────────┐
+│   gNodeB (RAN)  │                                      │  Data Networks   │
+│  Radio Access   │                                      │ Internet / IMS   │
+│   (External)    │                                      │    (External)    │
+└────────┬────────┘                                      └────────▲─────────┘
+         │ NGAP (SCTP)                                            │
+         │ GTP-U (UDP)                                            │ Forwarding
+         │                                                        │
+================================================================================
+                          KUBERNETES CLUSTER (Minikube)
+                          Namespace: telco-core
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           CONTROL PLANE                                  │
+│                                                                          │
+│  ┌─────────────────────┐         ┌─────────────────────┐               │
+│  │        AMF          │◄───SBI──►│        SMF          │               │
+│  │  Access & Mobility  │ (HTTP/2) │  Session Management │               │
+│  ├─────────────────────┤          ├─────────────────────┤               │
+│  │ Type: Deployment    │          │ Type: Deployment    │               │
+│  │ Replicas: 2         │          │ Replicas: 2         │               │
+│  │ State: Stateless    │          │ State: Stateless    │               │
+│  │                     │          │                     │               │
+│  │ Resources:          │          │ Resources:          │               │
+│  │ • Req: 256Mi/200m   │          │ • Req: 384Mi/250m   │               │
+│  │ • Lim: 512Mi/500m   │          │ • Lim: 768Mi/750m   │               │
+│  │                     │          │                     │               │
+│  │ Ports:              │          │ Ports:              │               │
+│  │ • 80/TCP (SBI)      │          │ • 80/TCP (SBI)      │               │
+│  │ • 38412/SCTP (NGAP) │          │ • 8805/UDP (PFCP)   │               │
+│  │ • 9090/TCP (Metrics)│          │ • 2123/UDP (GTP-C)  │               │
+│  │                     │          │ • 9091/TCP (Metrics)│               │
+│  │                     │          │                     │               │
+│  │ Service:            │          │ Service:            │               │
+│  │ amf-service         │          │ smf-service         │               │
+│  │ Session: ClientIP   │          │ Session: ClientIP   │               │
+│  │ Timeout: 3600s      │          │ Timeout: 7200s      │               │
+│  └──────────┬──────────┘          └──────────┬──────────┘               │
+│             │                                 │                          │
+│             │ MongoDB                         │ MongoDB                  │
+│             │ Connection                      │ Connection               │
+│             ▼                                 ▼                          │
+│  ┌──────────────────────────────────────────────────────────┐           │
+│  │                     DATA LAYER                           │           │
+│  │  ┌──────────────────────────────────────────────────┐    │           │
+│  │  │              MongoDB                             │    │           │
+│  │  │        Persistent State Storage                  │    │           │
+│  │  ├──────────────────────────────────────────────────┤    │           │
+│  │  │ Type: StatefulSet                                │    │           │
+│  │  │ Replicas: 1 (Dev) / 3+ (Prod)                   │    │           │
+│  │  │ Storage: 2Gi PersistentVolume                   │    │           │
+│  │  │ Port: 27017/TCP                                  │    │           │
+│  │  │ Service: mongodb-service (headless)              │    │           │
+│  │  │ Database: open5gs                                │    │           │
+│  │  │                                                  │    │           │
+│  │  │ Collections:                                     │    │           │
+│  │  │ • amf_context (registration state)               │    │           │
+│  │  │ • smf_context (session state)                    │    │           │
+│  │  │ • sessions (PDU sessions)                        │    │           │
+│  │  │ • subscribers (user profiles)                    │    │           │
+│  │  └──────────────────────────────────────────────────┘    │           │
+│  └──────────────────────────────────────────────────────────┘           │
+└──────────────────────────────────────────────────────────────────────────┘
+
+                                   │ PFCP (UDP)
+                                   │
+                                   ▼
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                            USER PLANE                                    │
+│                                                                          │
+│  ┌──────────────────────────────────────────────────────────────┐       │
+│  │                      UPF                                     │       │
+│  │              User Plane Function                             │       │
+│  ├──────────────────────────────────────────────────────────────┤       │
+│  │ Type: DaemonSet (1 pod per node)                            │       │
+│  │ Security: Privileged                                         │       │
+│  │ Capabilities: NET_ADMIN, SYS_ADMIN, NET_RAW                 │       │
+│  │ Host Network: true                                           │       │
+│  │                                                              │       │
+│  │ Resources:                                                   │       │
+│  │ • Req: 512Mi / 500m CPU                                      │       │
+│  │ • Lim: 2Gi / 2000m CPU                                       │       │
+│  │                                                              │       │
+│  │ Ports:                                                       │       │
+│  │ • 8805/UDP (PFCP - control from SMF)                        │       │
+│  │ • 2152/UDP (GTP-U - data from gNodeB)                       │       │
+│  │ • 9092/TCP (Metrics)                                         │       │
+│  │                                                              │       │
+│  │ Tunnel Interfaces:                                           │       │
+│  │ • ogstun  (Internet DNN: 10.45.0.0/16)                      │       │
+│  │ • ogstun2 (IMS DNN: 10.46.0.0/16)                           │       │
+│  │                                                              │       │
+│  │ Service: upf-service (headless)                              │       │
+│  └──────────────────────────────────────────────────────────────┘       │
+└──────────────────────────────────────────────────────────────────────────┘
+
+                                   │
+                                   │ Packet Forwarding
+                                   ▼
+                            Data Networks
+                         (Internet / IMS)
+
+================================================================================
+                         NETWORK CONFIGURATION
+================================================================================
+
+IP Address Pools (DNNs):
+┌──────────────────────────────────┬────────────────────────────────────┐
+│      Internet DNN                │         IMS DNN                    │
+├──────────────────────────────────┼────────────────────────────────────┤
+│ CIDR: 10.45.0.0/16               │ CIDR: 10.46.0.0/16                │
+│ Gateway: 10.45.0.1               │ Gateway: 10.46.0.1                │
+│ DNS: 8.8.8.8, 8.8.4.4            │ DNS: 8.8.8.8                      │
+│ Capacity: 65,534 addresses       │ Capacity: 65,534 addresses        │
+│ Interface: ogstun                │ Interface: ogstun2                │
+│ Use: Mobile broadband            │ Use: Voice/Video (IMS)            │
+└──────────────────────────────────┴────────────────────────────────────┘
+
+Network Slices:
+┌──────────────────────────────────┬────────────────────────────────────┐
+│        Slice 1                   │         Slice 2                    │
+├──────────────────────────────────┼────────────────────────────────────┤
+│ SST: 1 (eMBB)                    │ SST: 1 (eMBB)                     │
+│ SD: 000001                       │ SD: 000002                        │
+│ DNN: internet                    │ DNN: ims                          │
+│ IP Version: IPv4                 │ IP Version: IPv4v6                │
+│ Use: Consumer mobile broadband   │ Use: IMS voice/multimedia         │
+└──────────────────────────────────┴────────────────────────────────────┘
+
+PLMN Configuration (Test):
+- MCC (Mobile Country Code): 001
+- MNC (Mobile Network Code): 01
+
+================================================================================
+                    SECURITY & NETWORKPOLICIES (Calico)
+================================================================================
+
+Default Security Posture: DENY ALL
+
+Allowed Communication Paths:
+┌────────────────────────────────────────────────────────────────────────┐
+│ SOURCE          │ DESTINATION │ PORT/PROTOCOL │ PURPOSE              │
+├─────────────────┼─────────────┼───────────────┼──────────────────────┤
+│ AMF             │ SMF         │ 80/TCP        │ SBI communication    │
+│ AMF             │ MongoDB     │ 27017/TCP     │ State storage        │
+│ SMF             │ AMF         │ 80/TCP        │ SBI communication    │
+│ SMF             │ MongoDB     │ 27017/TCP     │ State storage        │
+│ SMF             │ UPF         │ 8805/UDP      │ PFCP control         │
+│ UPF             │ SMF         │ 8805/UDP      │ PFCP responses       │
+│ UPF             │ Internet    │ ALL           │ User plane forwarding│
+│ All Pods        │ DNS         │ 53/UDP        │ Name resolution      │
+│ Prometheus      │ All NFs     │ 9090-9092/TCP │ Metrics scraping     │
+│ External        │ AMF         │ 38412/SCTP    │ NGAP from gNodeB     │
+│ External        │ UPF         │ 2152/UDP      │ GTP-U from gNodeB    │
+└─────────────────┴─────────────┴───────────────┴──────────────────────┘
+
+NetworkPolicy Resources:
+1. default-deny-all: Block all traffic by default
+2. mongodb-allow-from-nfs: Allow control plane → MongoDB
+3. amf-allow-communication: Define AMF communication paths
+4. smf-allow-communication: Define SMF communication paths
+5. upf-allow-communication: Define UPF communication paths
+6. allow-metrics-scraping: Allow Prometheus metrics access
+
+================================================================================
+                          KEY CHARACTERISTICS
+================================================================================
+
+High Availability:
+- Control Plane: Active-Active with 2 replicas each
+- User Plane: Distributed per node via DaemonSet
+- Data Layer: StatefulSet with persistent storage
+- Zero-downtime rolling updates
+- Automatic pod failover and replacement
+- Session affinity for PFCP state consistency
+
+Cloud-Native Design:
+- Stateless control plane functions
+- External state storage (MongoDB)
+- Horizontal scalability
+- Container orchestration (Kubernetes)
+- Declarative configuration (YAML)
+- Infrastructure as Code (Git version control)
+- Microservices architecture
+
+Observability:
+- Prometheus metrics endpoints (all NFs)
+- Liveness probes (health checks)
+- Readiness probes (traffic readiness)
+- Startup probes (initialization time)
+- Structured logging
+- Resource usage monitoring
+
+================================================================================
+                       RESOURCE ALLOCATIONS SUMMARY
+================================================================================
+
+Total Requested Resources:
+- Memory: ~2GB (AMF: 512Mi + SMF: 768Mi + UPF: 512Mi + MongoDB: 512Mi)
+- CPU: ~1.2 cores (AMF: 0.4 + SMF: 0.5 + UPF: 0.5 + MongoDB: 0.25)
+- Storage: 2Gi (MongoDB PersistentVolume)
+
+Total Resource Limits:
+- Memory: ~4.25GB
+- CPU: ~3.75 cores
+
+Note: Values are conservative for Minikube development environment.
+Production deployments would require significantly higher allocations.
+
+================================================================================
+                        PROTOCOLS & INTERFACES
+================================================================================
+
+3GPP Interfaces:
+- N1: UE ↔ AMF (NAS protocol)
+- N2: gNodeB ↔ AMF (NGAP - NG Application Protocol)
+- N3: gNodeB ↔ UPF (GTP-U tunneling)
+- N4: SMF ↔ UPF (PFCP - Packet Forwarding Control Protocol)
+- N6: UPF ↔ Data Networks (IP routing)
+
+Service-Based Interfaces (SBI):
+- Namf: AMF services (HTTP/2 REST)
+- Nsmf: SMF services (HTTP/2 REST)
+
+Protocols:
+- HTTP/2: Service-Based Interface communication
+- SCTP: NGAP signaling (reliable ordered delivery)
+- UDP: PFCP, GTP-U, GTP-C (performance-critical paths)
+- TCP: MongoDB, metrics endpoints
+
+================================================================================
+                           DEPLOYMENT NOTES
+================================================================================
+
+Platform: Minikube with Docker driver
+Kubernetes: Single-node cluster (development)
+CNI: Calico (NetworkPolicy support required)
+Container Runtime: Docker
+Storage: Local PersistentVolumes
+Namespace: telco-core
+3GPP Release: R16 compliant architecture
+Open5GS: Container images from openverso/open5gs-*
+
+Limitations (Development Environment):
+- Single node (no true multi-node HA)
+- No external gNodeB connectivity
+- No complete 5G Core (missing NRF, AUSF, UDM, PCF, etc.)
+- Test PLMN identifiers only
+- Standard Linux networking (no DPDK)
+- Limited observability (no Prometheus/Grafana stack)
+
+Production Evolution Path:
+- Multi-node Kubernetes cluster (3+ nodes)
+- MongoDB replica set (3+ members)
+- Complete 5G Core network functions
+- Service mesh (Istio/Linkerd)
+- Full observability stack
+- DPDK/SR-IOV for UPF
+- Hardware acceleration
+- CI/CD pipeline
+- Automated backup/recovery
+
+================================================================================

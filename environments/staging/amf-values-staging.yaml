@@ -1,0 +1,24 @@
+# Staging environment overrides for AMF
+replicaCount: 2  # 2 replicas in staging for HA testing
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 512Mi
+  requests:
+    cpu: 150m
+    memory: 256Mi
+
+amf:
+  config:
+    amfId: "amf-staging-001"
+    amfName: "AMF-Staging-Region-1"
+    region: "staging-region-1"
+    smfAddresses:
+      - "smf-release-5g-smf:8080"
+
+labels:
+  environment: staging
+  component: amf
+  plane: control
+  tier: access

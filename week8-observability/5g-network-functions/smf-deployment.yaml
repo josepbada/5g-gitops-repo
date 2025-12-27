@@ -1,0 +1,105 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smf
+  namespace: telco-observability
+  labels:
+    app: smf
+    nf-type: control-plane
+    team: telco
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: smf
+  template:
+    metadata:
+      labels:
+        app: smf
+        nf-type: control-plane
+        team: telco
+    spec:
+      containers:
+      - name: smf
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat > /tmp/metrics.prom << 'EOF'
+          # HELP smf_session_create_requests Total session creation requests
+          # TYPE smf_session_create_requests counter
+          smf_session_create_requests{result="success"} 23456
+          smf_session_create_requests{result="failure"} 345
+          
+          # HELP smf_active_sessions Currently active PDU sessions
+          # TYPE smf_active_sessions gauge
+          smf_active_sessions{session_type="ipv4"} 12345
+          smf_active_sessions{session_type="ipv6"} 3456
+          smf_active_sessions{session_type="ipv4v6"} 2345
+          
+          # HELP smf_session_duration_seconds Session duration
+          # TYPE smf_session_duration_seconds histogram
+          smf_session_duration_seconds_bucket{le="60"} 234
+          smf_session_duration_seconds_bucket{le="300"} 1234
+          smf_session_duration_seconds_bucket{le="900"} 3456
+          smf_session_duration_seconds_bucket{le="3600"} 8765
+          smf_session_duration_seconds_bucket{le="86400"} 23456
+          smf_session_duration_seconds_bucket{le="+Inf"} 23801
+          smf_session_duration_seconds_sum 12456789.45
+          smf_session_duration_seconds_count 23801
+          
+          # HELP smf_qos_flow_count Number of QoS flows established
+          # TYPE smf_qos_flow_count counter
+          smf_qos_flow_count{qos_class="5qi_1"} 4567
+          smf_qos_flow_count{qos_class="5qi_9"} 18765
+          smf_qos_flow_count{qos_class="5qi_69"} 789
+          
+          # HELP smf_session_success_rate Session establishment success rate
+          # TYPE smf_session_success_rate gauge
+          smf_session_success_rate 0.9855
+          EOF
+          
+          while true; do
+            nc -l -p 8082 -q 1 < /tmp/metrics.prom 2>/dev/null || true
+          done
+        ports:
+        - name: metrics
+          containerPort: 8082
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          tcpSocket:
+            port: 8082
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          tcpSocket:
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smf
+  namespace: telco-observability
+  labels:
+    app: smf
+    nf-type: control-plane
+    team: telco
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8082
+    targetPort: 8082
+    protocol: TCP
+  selector:
+    app: smf
