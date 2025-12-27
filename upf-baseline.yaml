@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upf-baseline
+  namespace: 5g-core
+  labels:
+    app: upf
+    version: baseline
+    component: user-plane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upf
+      version: baseline
+  template:
+    metadata:
+      labels:
+        app: upf
+        version: baseline
+        component: user-plane
+    spec:
+      containers:
+      - name: upf
+        image: nginx:latest
+        command: ["nginx"]
+        args: ["-c", "/etc/upf/nginx.conf", "-g", "daemon off;"]
+        ports:
+        - name: n3-gtpu
+          containerPort: 2152
+          protocol: UDP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        
+        # NO resource requests or limits - BestEffort QoS
+        # This pod will compete with others for CPU time
+        
+        env:
+        - name: UPF_MODE
+          value: "standard"
+        - name: WORKER_THREADS
+          value: "2"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upf-baseline-service
+  namespace: 5g-core
+  labels:
+    app: upf
+    version: baseline
+spec:
+  type: ClusterIP
+  selector:
+    app: upf
+    version: baseline
+  ports:
+  - name: n3-gtpu
+    port: 2152
+    targetPort: 2152
+    protocol: UDP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP

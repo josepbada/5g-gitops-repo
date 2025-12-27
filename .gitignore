@@ -1,0 +1,17 @@
+# Kubernetes temporary files
+*.tmp
+*.swp
+*~
+
+# Test results
+test-results/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.bak
+.vscode/
+.idea/

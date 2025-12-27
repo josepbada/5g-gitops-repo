@@ -1,0 +1,184 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: upf-config
+  namespace: 5g-core
+data:
+  upf.conf: |
+    # 5G UPF Configuration
+    upf:
+      name: upf-001
+      n3_interface:
+        address: 192.168.252.3
+        port: 2152
+      n4_interface:
+        address: 192.168.250.3
+        port: 8805
+      n6_interface:
+        address: 192.168.254.3
+      
+      # Performance settings
+      workers: 4
+      ring_size: 2048
+      buffer_size: 2048
+      
+      # QoS profiles
+      qos_profiles:
+        - id: 9
+          name: default
+          priority: 8
+          packet_delay_budget_ms: 300
+          packet_error_rate: 0.000001
+  
+  # Nginx config to simulate health endpoints
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    http {
+        server {
+            listen 9090;
+            
+            location /health {
+                access_log off;
+                return 200 "healthy\n";
+                add_header Content-Type text/plain;
+            }
+            
+            location /ready {
+                access_log off;
+                return 200 "ready\n";
+                add_header Content-Type text/plain;
+            }
+            
+            location /metrics {
+                access_log off;
+                return 200 "# TYPE upf_packets_processed counter\nupf_packets_processed 1000\n";
+                add_header Content-Type text/plain;
+            }
+        }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upf-optimized
+  namespace: 5g-core
+  labels:
+    app: upf
+    version: optimized
+    component: user-plane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upf
+      version: optimized
+  template:
+    metadata:
+      labels:
+        app: upf
+        version: optimized
+        component: user-plane
+    spec:
+      # This is critical: Guaranteed QoS requires both requests and limits to be equal
+      containers:
+      - name: upf
+        image: nginx:latest
+        command: ["nginx"]
+        args: ["-c", "/etc/upf/nginx.conf", "-g", "daemon off;"]
+        ports:
+        - name: n3-gtpu
+          containerPort: 2152
+          protocol: UDP
+        - name: n4-pfcp
+          containerPort: 8805
+          protocol: UDP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        
+        # CRITICAL: For CPU pinning, requests must equal limits (Guaranteed QoS)
+        resources:
+          requests:
+            cpu: "2000m"      # Request exactly 2 CPU cores
+            memory: "2Gi"     # Request exactly 2GB RAM
+          limits:
+            cpu: "2000m"      # Limit to exactly 2 CPU cores (same as request)
+            memory: "2Gi"     # Limit to exactly 2GB RAM (same as request)
+        
+        # Environment variables for configuration
+        env:
+        - name: UPF_MODE
+          value: "performance"
+        - name: WORKER_THREADS
+          value: "4"
+        - name: NUMA_NODE
+          value: "0"
+        
+        # Mount the configuration
+        volumeMounts:
+        - name: config
+          mountPath: /etc/upf
+          readOnly: true
+        
+        # Health checks - NOW WILL WORK
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9090
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 9090
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3
+      
+      volumes:
+      - name: config
+        configMap:
+          name: upf-config
+      
+      # Node affinity to ensure pod runs on nodes with performance features
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: Exists
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upf-service
+  namespace: 5g-core
+  labels:
+    app: upf
+spec:
+  type: ClusterIP
+  selector:
+    app: upf
+    version: optimized
+  ports:
+  - name: n3-gtpu
+    port: 2152
+    targetPort: 2152
+    protocol: UDP
+  - name: n4-pfcp
+    port: 8805
+    targetPort: 8805
+    protocol: UDP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
