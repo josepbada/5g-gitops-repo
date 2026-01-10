@@ -31,7 +31,7 @@ spec:
             memory: "256Mi"
           limits:
             cpu: "500m"
-            memory: "512gI"
+            memory: "512Gi"
         volumeMounts:
         - name: mongodb-data
           mountPath: /data/db
