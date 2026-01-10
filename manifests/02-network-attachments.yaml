@@ -1,0 +1,101 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: n2-network
+  namespace: open5gs
+  labels:
+    network-type: n2-interface
+    deployment-phase: day0-infrastructure
+spec:
+  config: '{
+    "cniVersion": "0.3.1",
+    "type": "macvlan",
+    "master": "eth0",
+    "mode": "bridge",
+    "ipam": {
+      "type": "host-local",
+      "subnet": "10.100.50.0/24",
+      "rangeStart": "10.100.50.10",
+      "rangeEnd": "10.100.50.250",
+      "gateway": "10.100.50.1",
+      "routes": [
+        { "dst": "0.0.0.0/0" }
+      ]
+    }
+  }'
+---
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: n3-network
+  namespace: open5gs
+  labels:
+    network-type: n3-interface
+    deployment-phase: day0-infrastructure
+spec:
+  config: '{
+    "cniVersion": "0.3.1",
+    "type": "macvlan",
+    "master": "eth0",
+    "mode": "bridge",
+    "ipam": {
+      "type": "host-local ",
+"subnet": "10.100.51.0/24",
+"rangeStart": "10.100.51.10",
+"rangeEnd": "10.100.51.250",
+"gateway": "10.100.51.1",
+"routes": [
+{ "dst": "0.0.0.0/0" }
+]
+}
+}'
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+name: n4-network
+namespace: open5gs
+labels:
+network-type: n4-interface
+deployment-phase: day0-infrastructure
+spec:
+config: '{
+"cniVersion": "0.3.1",
+"type": "macvlan",
+"master": "eth0",
+"mode": "bridge",
+"ipam": {
+"type": "host-local",
+"subnet": "10.100.52.0/24",
+"rangeStart": "10.100.52.10",
+"rangeEnd": "10.100.52.250",
+"gateway": "10.100.52.1",
+"routes": [
+{ "dst": "0.0.0.0/0" }
+]
+}
+}'
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+name: n6-network
+namespace: open5gs
+labels:
+network-type: n6-interface
+deployment-phase: day0-infrastructure
+spec:
+config: '{
+"cniVersion": "0.3.1",
+"type": "macvlan",
+"master": "eth0",
+"mode": "bridge",
+"ipam": {
+"type": "host-local",
+"subnet": "10.100.53.0/24",
+"rangeStart": "10.100.53.10",
+"rangeEnd": "10.100.53.250",
+"gateway": "10.100.53.1",
+"routes": [
+{ "dst": "0.0.0.0/0" }
+]
+}
+}'
