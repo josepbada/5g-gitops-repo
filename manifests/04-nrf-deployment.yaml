@@ -6,8 +6,6 @@ metadata:
   labels:
     app: nrf
     component: control-plane
-    function: service-discovery
-    deployment-phase: day0-foundation
 spec:
   replicas: 1
   selector:
@@ -18,39 +16,35 @@ spec:
       labels:
         app: nrf
         component: control-plane
-        function: service-discovery
     spec:
       containers:
       - name: nrf
-        image: gradiant/open5gs:2.4.9
-        command: ["open5gs-nrfd", "-c", "/etc/open5gs/nrf.yaml"]
+        image: openverso/open5gs:latest
+        command: ["/opt/open5gs/bin/open5gs-nrfd"]
+        args: ["-c", "/etc/open5gs/nrf.yaml"]
         ports:
         - containerPort: 7777
-          name: sbi
-          protocol: TCP
-        - containerPort: 9090
-          name: metrics
           protocol: TCP
         resources:
           requests:
             cpu: "100m"
-            memory: "256Mi"
+            memory: "128Mi"
           limits:
             cpu: "200m"
-            memory: "512Mi"
+            memory: "256Mi"
         volumeMounts:
         - name: nrf-config
           mountPath: /etc/open5gs
         livenessProbe:
-          tcpSocket:
-            port: 7777
+          exec:
+            command: ["pgrep", "open5gs-nrfd"]
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 15
         readinessProbe:
-          tcpSocket:
-            port: 7777
+          exec:
+            command: ["pgrep", "open5gs-nrfd"]
           initialDelaySeconds: 15
-          periodSeconds: 5
+          periodSeconds: 10
       volumes:
       - name: nrf-config
         configMap:
@@ -61,19 +55,11 @@ kind: Service
 metadata:
   name: nrf-service
   namespace: open5gs
-  labels:
-    app: nrf
-    component: control-plane
 spec:
   type: ClusterIP
   ports:
   - port: 7777
     targetPort: 7777
     protocol: TCP
-    name: sbi
-  - port: 9090
-    targetPort: 9090
-    protocol: TCP
-    name: metrics
   selector:
     app: nrf
