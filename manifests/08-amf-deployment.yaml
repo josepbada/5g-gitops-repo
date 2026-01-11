@@ -19,6 +19,7 @@ spec:
         app: amf
         component: control-plane
         function: access-mobility-management
+        deployment-phase: day0-core
       annotations:
         k8s.v1.cni.cncf.io/networks: '[
           {

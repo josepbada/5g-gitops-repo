@@ -19,6 +19,7 @@ spec:
         app: smf
         component: control-plane
         function: session-management
+        deployment-phase: day0-core
       annotations:
         k8s.v1.cni.cncf.io/networks: '[
           {
