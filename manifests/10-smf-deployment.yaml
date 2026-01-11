@@ -30,8 +30,9 @@ spec:
     spec:
       containers:
       - name: smf
-        image: open5gs/open5gs:latest
-        command: ["open5gs-smfd", "-c", "/etc/open5gs/smf.yaml"]
+        image: openverso/open5gs:latest
+        command: ["/opt/open5gs/bin/open5gs-ausfd"]
+        args: ["-c", "/etc/open5gs/ausf.yaml"]
         ports:
         - containerPort: 7777
           name: sbi
