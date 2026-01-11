@@ -31,8 +31,8 @@ spec:
       containers:
       - name: amf
         image: openverso/open5gs:latest
-        command: ["/opt/open5gs/bin/open5gs-ausfd"]
-        args: ["-c", "/etc/open5gs/ausf.yaml"]
+        command: ["/opt/open5gs/bin/open5gs-amfd"]
+        args: ["-c", "/etc/open5gs/amf.yaml"]
         ports:
         - containerPort: 7777
           name: sbi
