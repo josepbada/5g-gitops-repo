@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: nrf
-        image: gradiant/open5gs:2.7.0
+        image: gradiant/open5gs:2.4.9
         command: ["open5gs-nrfd", "-c", "/etc/open5gs/nrf.yaml"]
         ports:
         - containerPort: 7777
