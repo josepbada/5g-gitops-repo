@@ -10,7 +10,6 @@ metadata:
 data:
   ausf.yaml: |
     logger:
-      file: /var/log/open5gs/ausf.log
       level: info
 
     ausf:
@@ -39,7 +38,6 @@ metadata:
 data:
   udm.yaml: |
     logger:
-      file: /var/log/open5gs/udm.log
       level: info
 
     udm:
