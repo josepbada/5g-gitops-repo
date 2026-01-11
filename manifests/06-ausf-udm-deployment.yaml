@@ -18,6 +18,8 @@ spec:
       labels:
         app: ausf
         component: control-plane
+        function: authentication
+        deployment-phase: day0-foundation  # ← AGREGAR
     spec:
       containers:
       - name: ausf
@@ -90,6 +92,7 @@ spec:
         app: udm
         component: control-plane
         function: subscription-management
+        deployment-phase: day0-foundation  # ← AGREGAR
     spec:
       containers:
       - name: udm

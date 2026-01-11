@@ -18,6 +18,7 @@ spec:
       labels:
         app: nrf
         component: control-plane
+        deployment-phase: day0-foundation
     spec:
       containers:
       - name: nrf
