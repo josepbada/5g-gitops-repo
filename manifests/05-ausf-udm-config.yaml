@@ -14,13 +14,13 @@ data:
 
     ausf:
       sbi:
-          - address: 0.0.0.0
+          - addr: 0.0.0.0
             port: 7777
 
       
-      metrics:
-          - address: 0.0.0.0
-            port: 9090
+#      metrics:
+#          - address: 0.0.0.0
+#            port: 9090
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -38,10 +38,10 @@ data:
 
     udm:
       sbi:
-          - address: 0.0.0.0
+          - addr: 0.0.0.0
             port: 7777
 
       
-      metrics:
-          - address: 0.0.0.0
-            port: 9090
+#      metrics:
+#          - address: 0.0.0.0
+#            port: 9090
