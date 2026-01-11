@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: ausf
-        image: gradiant/open5gs:2.4.9
+        image: openverso/open5gs-ausf:2.7.2
         command: ["open5gs-ausfd", "-c", "/etc/open5gs/ausf.yaml"]
         ports:
         - containerPort: 7777
@@ -105,7 +105,7 @@ spec:
     spec:
       containers:
       - name: udm
-        image: gradiant/open5gs:2.4.9
+        image: openverso/open5gs-udm:2.7.2
         command: ["open5gs-udmd", "-c", "/etc/open5gs/udm.yaml"]
         ports:
         - containerPort: 7777
