@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: nrf
-        image: openverso/open5gs-nrf:2.7.2
+        image: registry.gitlab.com/gradiant/openverso/open5gs:2.7.0
         command: ["open5gs-nrfd", "-c", "/etc/open5gs/nrf.yaml"]
         ports:
         - containerPort: 7777
