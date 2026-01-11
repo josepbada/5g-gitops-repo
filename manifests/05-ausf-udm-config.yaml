@@ -14,13 +14,11 @@ data:
 
     ausf:
       sbi:
-        server:
           - address: 0.0.0.0
             port: 7777
 
       
       metrics:
-        server:
           - address: 0.0.0.0
             port: 9090
 ---
@@ -40,12 +38,10 @@ data:
 
     udm:
       sbi:
-        server:
           - address: 0.0.0.0
             port: 7777
 
       
       metrics:
-        server:
           - address: 0.0.0.0
             port: 9090

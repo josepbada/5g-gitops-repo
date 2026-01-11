@@ -14,12 +14,10 @@ data:
 
     nrf:
       sbi:
-        server:
           - address: 0.0.0.0
             port: 7777
 
       
       metrics:
-        server:
           - address: 0.0.0.0
             port: 9090
