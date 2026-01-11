@@ -6,6 +6,8 @@ metadata:
   labels:
     app: nrf
     component: control-plane
+    function: service-discovery
+    deployment-phase: day0-foundation
 spec:
   replicas: 1
   selector:

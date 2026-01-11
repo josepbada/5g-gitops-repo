@@ -24,6 +24,8 @@ metadata:
   labels:
     app: ausf
     component: control-plane
+    function: authentication
+    deployment-phase: day0-foundation
 spec:
   replicas: 1
   selector:
@@ -90,6 +92,8 @@ metadata:
   labels:
     app: udm
     component: control-plane
+    function: subscription-management
+    deployment-phase: day0-foundation
 spec:
   replicas: 1
   selector:
