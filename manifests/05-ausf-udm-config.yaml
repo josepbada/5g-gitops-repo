@@ -17,9 +17,7 @@ data:
         server:
           - address: 0.0.0.0
             port: 7777
-        client:
-          nrf:
-            - uri: http://nrf-service:7777
+
       
       metrics:
         server:
@@ -45,9 +43,7 @@ data:
         server:
           - address: 0.0.0.0
             port: 7777
-        client:
-          nrf:
-            - uri: http://nrf-service:7777
+
       
       metrics:
         server:
