@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ausf
+  namespace: open5gs
+  labels:
+    app: ausf
+    component: control-plane
+    function: authentication
+    deployment-phase: day0-foundation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ausf
+  template:
+    metadata:
+      labels:
+        app: ausf
+        component: control-plane
+        function: authentication
+    spec:
+      containers:
+      - name: ausf
+        image: open5gs/open5gs:latest
+        command: ["open5gs-ausfd", "-c", "/etc/open5gs/ausf.yaml"]
+        ports:
+        - containerPort: 7777
+          name: sbi
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "200m"
+            memory: "512Mi"
+        volumeMounts:
+        - name: ausf-config
+          mountPath: /etc/open5gs
+        env:
+        - name: DB_URI
+          value: "mongodb://mongodb:27017"
+        livenessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 15
+          periodSeconds: 5
+      volumes:
+      - name: ausf-config
+        configMap:
+          name: ausf-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ausf-service
+  namespace: open5gs
+  labels:
+    app: ausf
+    component: control-plane
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7777
+    targetPort: 7777
+    protocol: TCP
+    name: sbi
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: ausf
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: udm
+  namespace: open5gs
+  labels:
+    app: udm
+    component: control-plane
+    function: subscription-management
+    deployment-phase: day0-foundation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: udm
+  template:
+    metadata:
+      labels:
+        app: udm
+        component: control-plane
+        function: subscription-management
+    spec:
+      containers:
+      - name: udm
+        image: open5gs/open5gs:latest
+        command: ["open5gs-udmd", "-c", "/etc/open5gs/udm.yaml"]
+        ports:
+        - containerPort: 7777
+          name: sbi
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "200m"
+            memory: "512Mi"
+        volumeMounts:
+        - name: udm-config
+          mountPath: /etc/open5gs
+        env:
+        - name: DB_URI
+          value: "mongodb://mongodb:27017"
+        livenessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 15
+          periodSeconds: 5
+      volumes:
+      - name: udm-config
+        configMap:
+          name: udm-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: udm-service
+  namespace: open5gs
+  labels:
+    app: udm
+    component: control-plane
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7777
+    targetPort: 7777
+    protocol: TCP
+    name: sbi
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: udm

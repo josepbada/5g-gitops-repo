@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nrf
+  namespace: open5gs
+  labels:
+    app: nrf
+    component: control-plane
+    function: service-discovery
+    deployment-phase: day0-foundation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nrf
+  template:
+    metadata:
+      labels:
+        app: nrf
+        component: control-plane
+        function: service-discovery
+    spec:
+      containers:
+      - name: nrf
+        image: open5gs/open5gs:latest
+        command: ["open5gs-nrfd", "-c", "/etc/open5gs/nrf.yaml"]
+        ports:
+        - containerPort: 7777
+          name: sbi
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "200m"
+            memory: "512Mi"
+        volumeMounts:
+        - name: nrf-config
+          mountPath: /etc/open5gs
+        livenessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 15
+          periodSeconds: 5
+      volumes:
+      - name: nrf-config
+        configMap:
+          name: nrf-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nrf-service
+  namespace: open5gs
+  labels:
+    app: nrf
+    component: control-plane
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7777
+    targetPort: 7777
+    protocol: TCP
+    name: sbi
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: nrf
