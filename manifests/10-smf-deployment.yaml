@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smf
+  namespace: open5gs
+  labels:
+    app: smf
+    component: control-plane
+    function: session-management
+    deployment-phase: day0-core
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smf
+  template:
+    metadata:
+      labels:
+        app: smf
+        component: control-plane
+        function: session-management
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[
+          {
+            "name": "n4-network",
+            "interface": "n4",
+            "ips": ["10.100.52.10/24"]
+          }
+        ]'
+    spec:
+      containers:
+      - name: smf
+        image: open5gs/open5gs:latest
+        command: ["open5gs-smfd", "-c", "/etc/open5gs/smf.yaml"]
+        ports:
+        - containerPort: 7777
+          name: sbi
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        - containerPort: 8805
+          name: pfcp
+          protocol: UDP
+        resources:
+          requests:
+            cpu: "400m"
+            memory: "512Mi"
+          limits:
+            cpu: "800m"
+            memory: "1Gi"
+        volumeMounts:
+        - name: smf-config
+          mountPath: /etc/open5gs
+        livenessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 15
+          periodSeconds: 5
+      volumes:
+      - name: smf-config
+        configMap:
+          name: smf-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smf-service
+  namespace: open5gs
+  labels:
+    app: smf
+    component: control-plane
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7777
+    targetPort: 7777
+    protocol: TCP
+    name: sbi
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  - port: 8805
+    targetPort: 8805
+    protocol: UDP
+    name: pfcp
+  selector:
+    app: smf
