@@ -18,7 +18,6 @@ data:
           port: 7777
      nrf:
         - uri: http://nrf-service:7777
-      ngap:
       pfcp:
         - addr: 10.100.52.10
       
