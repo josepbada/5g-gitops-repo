@@ -15,9 +15,7 @@ data:
     upf:
       pfcp:
         - addr: 10.100.52.20
-     nrf:
-        - uri: http://nrf-service:7777
-      ngap:
+      
       gtpu:
         - addr: 10.100.51.20
       
