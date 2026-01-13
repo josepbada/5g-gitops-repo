@@ -16,7 +16,9 @@ data:
       sbi:
         - addr: 0.0.0.0
           port: 7777
-      
+     nrf:
+        - uri: http://nrf-service:7777
+      ngap:
       pfcp:
         - addr: 10.100.52.10
       
