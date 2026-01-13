@@ -10,26 +10,18 @@ metadata:
 data:
   amf.yaml: |
     logger:
-      file: /var/log/open5gs/amf.log
       level: info
-
+    
     amf:
       sbi:
-        server:
-          - address: 0.0.0.0
-            port: 7777
-        client:
-          nrf:
-            - uri: http://nrf-service:7777
+        - addr: 0.0.0.0
+          port: 7777
+      
+      nrf:
+        - uri: http://nrf-service:7777
       
       ngap:
-        server:
-          - address: 10.100.50.10
-      
-      metrics:
-        server:
-          - address: 0.0.0.0
-            port: 9090
+        - addr: 10.100.50.10
       
       guami:
         - plmn_id:
@@ -43,7 +35,7 @@ data:
         - plmn_id:
             mcc: 001
             mnc: 01
-          tac: 2  # Changed from 1 to 2
+          tac: 2
       
       plmn_support:
         - plmn_id:
