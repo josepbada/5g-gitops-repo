@@ -1,0 +1,16 @@
+# This pod should be REJECTED by baseline PSS enforcement
+# It tries to use privileged mode which violates baseline standard
+apiVersion: v1
+kind: Pod
+metadata:
+  name: insecure-test
+  namespace: telco-core
+  labels:
+    app: test
+spec:
+  containers:
+  - name: test
+    image: nginx:1.24-alpine
+    # Privileged mode violates baseline security
+    securityContext:
+      privileged: true

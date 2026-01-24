@@ -1,0 +1,78 @@
+# Secure AMF deployment following Restricted Pod Security Standard
+# This shows how to run control plane 5G NFs with maximum security
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amf-secure
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: amf
+    security: restricted
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: 5g-core
+      component: amf
+  template:
+    metadata:
+      labels:
+        app: 5g-core
+        component: amf
+        security: restricted
+    spec:
+      serviceAccountName: amf-operator
+      # Security context at pod level
+      securityContext:
+        # Run as non-root user (required by Restricted standard)
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        # Ensure the filesystem is not writable
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: amf
+        image: nginx:1.24-alpine
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        # Security context at container level
+        securityContext:
+          # Must run as non-root
+          runAsNonRoot: true
+          runAsUser: 1000
+          # Prevent privilege escalation
+          allowPrivilegeEscalation: false
+          # Drop all Linux capabilities
+          capabilities:
+            drop:
+            - ALL
+          # Read-only root filesystem
+          readOnlyRootFilesystem: true
+        # Resource limits are important for security to prevent resource exhaustion
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        # Volume for temporary files since root filesystem is read-only
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: cache
+          mountPath: /var/cache/nginx
+        - name: run
+          mountPath: /var/run
+      # EmptyDir volumes for writable directories
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: cache
+        emptyDir: {}
+      - name: run
+        emptyDir: {}
