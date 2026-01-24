@@ -1,0 +1,57 @@
+# Role for AMF Operators - they can manage AMF deployments and services
+# In a real 5G network, AMF operators need to scale, update, and monitor AMF instances
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: amf-operator-role
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: amf
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  resourceNames: []
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+---
+# Role for UPF Operators - they can manage UPF workloads
+# UPF handles user data plane, so operators need full control over UPF pods
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: upf-operator-role
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: upf
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods", "services"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+---
+# Role for Security Auditors - read-only access for compliance
+# Auditors need to see everything but cannot make changes
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: security-auditor-role
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    role: auditor
+rules:
+- apiGroups: ["", "apps", "networking.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]

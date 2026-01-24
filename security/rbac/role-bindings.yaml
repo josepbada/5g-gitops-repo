@@ -1,0 +1,54 @@
+# RoleBinding for AMF Operator
+# This grants the amf-operator ServiceAccount the permissions defined in amf-operator-role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: amf-operator-binding
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: amf
+subjects:
+- kind: ServiceAccount
+  name: amf-operator
+  namespace: telco-core
+roleRef:
+  kind: Role
+  name: amf-operator-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# RoleBinding for UPF Operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: upf-operator-binding
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: upf
+subjects:
+- kind: ServiceAccount
+  name: upf-operator
+  namespace: telco-core
+roleRef:
+  kind: Role
+  name: upf-operator-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# RoleBinding for Security Auditor
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: security-auditor-binding
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    role: auditor
+subjects:
+- kind: ServiceAccount
+  name: security-auditor
+  namespace: telco-core
+roleRef:
+  kind: Role
+  name: security-auditor-role
+  apiGroup: rbac.authorization.k8s.io

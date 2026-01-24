@@ -1,0 +1,37 @@
+# Test AMF deployment to verify RBAC
+# This represents a simplified AMF network function
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amf-test
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: amf
+    nf: amf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: 5g-core
+      component: amf
+  template:
+    metadata:
+      labels:
+        app: 5g-core
+        component: amf
+    spec:
+      serviceAccountName: amf-operator
+      containers:
+      - name: amf
+        image: nginx:1.24-alpine
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
