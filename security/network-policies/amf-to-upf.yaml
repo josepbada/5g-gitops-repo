@@ -1,0 +1,28 @@
+# Allow AMF to communicate with UPF (simulating N2 interface traffic)
+# In real 5G, N2 carries control plane signaling
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-amf-to-upf
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    policy-type: allow-specific
+    interface: n2-simulation
+spec:
+  # Apply to UPF pods
+  podSelector:
+    matchLabels:
+      component: upf
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow traffic from AMF pods
+  - from:
+    - podSelector:
+        matchLabels:
+          component: amf
+    ports:
+    # Allow on the UPF service port
+    - protocol: TCP
+      port: 80

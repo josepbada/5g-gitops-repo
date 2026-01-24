@@ -1,0 +1,46 @@
+# Allow AMF to communicate outbound to other 5G core functions
+# AMF needs to reach authentication servers, subscriber databases, etc.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-amf-egress
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    policy-type: egress
+    component: amf
+spec:
+  # Apply to AMF pods
+  podSelector:
+    matchLabels:
+      component: amf
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS (already covered by allow-dns but being explicit)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow AMF to reach UPF
+  - to:
+    - podSelector:
+        matchLabels:
+          component: upf
+    ports:
+    - protocol: TCP
+      port: 80
+  # Allow AMF to reach external services on standard ports
+  # In production, you would restrict this to specific IP ranges
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

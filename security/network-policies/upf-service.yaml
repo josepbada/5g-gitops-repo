@@ -1,0 +1,18 @@
+# Service for UPF to enable stable endpoint for communication
+apiVersion: v1
+kind: Service
+metadata:
+  name: upf-service
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: upf
+spec:
+  selector:
+    component: upf
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
