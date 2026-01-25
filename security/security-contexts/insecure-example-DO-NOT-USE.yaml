@@ -1,0 +1,36 @@
+# INSECURE CONFIGURATION - FOR COMPARISON ONLY - DO NOT USE IN PRODUCTION
+# This shows what NOT to do - all the dangerous settings we want to avoid
+apiVersion: v1
+kind: Pod
+metadata:
+  name: insecure-example
+  namespace: telco-core
+  labels:
+    app: example
+    component: insecure
+    version: v1.0.0
+    environment: development
+  annotations:
+    description: "This is an example of insecure configuration - DO NOT USE"
+spec:
+  # DANGER: Running as root
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+  # DANGER: Using host network
+  hostNetwork: true
+  hostIPC: true
+  hostPID: true
+  containers:
+  - name: insecure
+    image: nginx:1.24-alpine
+    # DANGER: Privileged mode gives container almost all host capabilities
+    securityContext:
+      privileged: true
+      allowPrivilegeEscalation: true
+      readOnlyRootFilesystem: false
+      capabilities:
+        add:
+          - ALL
+    # DANGER: No resource limits - can exhaust node resources
+    resources: {}

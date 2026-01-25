@@ -1,0 +1,137 @@
+# Hardened SMF deployment with comprehensive security contexts
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smf-hardened
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: smf
+    version: v1.0.0
+    environment: production
+    security: hardened
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: 5g-core
+      component: smf
+  template:
+    metadata:
+      labels:
+        app: 5g-core
+        component: smf
+        version: v1.0.0
+        environment: production
+    spec:
+      serviceAccountName: amf-operator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+        seLinuxOptions:
+          level: "s0:c123,c456"
+      hostNetwork: false
+      hostIPC: false
+      hostPID: false
+      dnsPolicy: ClusterFirst
+      containers:
+      - name: smf
+        image: nginx:1.24-alpine
+        imagePullPolicy: Always
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            # Crear configuración de nginx en puerto 8080
+            cat > /tmp/nginx.conf <<'EOF'
+            events {
+                worker_connections 1024;
+            }
+            http {
+                server {
+                    listen 8080;
+                    location / {
+                        return 200 "SMF Hardened - Secure\n";
+                        add_header Content-Type text/plain;
+                    }
+                }
+            }
+            EOF
+            exec nginx -c /tmp/nginx.conf -g 'daemon off;'
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 101
+          runAsGroup: 101
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        env:
+        - name: SMF_INSTANCE_ID
+          value: "smf-001"
+        - name: PLMN_ID
+          value: "00101"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: cache
+          mountPath: /var/cache/nginx
+        - name: run
+          mountPath: /var/run
+      volumes:
+      - name: tmp
+        emptyDir:
+          sizeLimit: 100Mi
+      - name: cache
+        emptyDir:
+          sizeLimit: 100Mi
+      - name: run
+        emptyDir:
+          sizeLimit: 10Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smf-service
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: smf
+spec:
+  selector:
+    app: 5g-core
+    component: smf
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
