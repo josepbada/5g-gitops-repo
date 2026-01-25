@@ -1,0 +1,53 @@
+# ConstraintTemplate for enforcing container resource limits
+# Ensures all containers have CPU and memory limits set
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8scontainerlimits
+  annotations:
+    description: "Requires containers to have resource limits to prevent resource exhaustion"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sContainerLimits
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            enforceCPU:
+              type: boolean
+              description: "Enforce CPU limits"
+            enforceMemory:
+              type: boolean
+              description: "Enforce memory limits"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8scontainerlimits
+
+        # Check if a container is missing CPU limits
+        missing_cpu_limit(container) {
+          input.parameters.enforceCPU
+          not container.resources.limits.cpu
+        }
+
+        # Check if a container is missing memory limits
+        missing_memory_limit(container) {
+          input.parameters.enforceMemory
+          not container.resources.limits.memory
+        }
+
+        # Violation for missing CPU limits
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          missing_cpu_limit(container)
+          msg := sprintf("Container <%v> does not have CPU limits set", [container.name])
+        }
+
+        # Violation for missing memory limits
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          missing_memory_limit(container)
+          msg := sprintf("Container <%v> does not have memory limits set", [container.name])
+        }

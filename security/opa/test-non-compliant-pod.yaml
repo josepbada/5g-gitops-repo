@@ -1,0 +1,13 @@
+# This pod should be REJECTED by OPA because it's missing required labels
+apiVersion: v1
+kind: Pod
+metadata:
+  name: non-compliant-test
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    # Missing: component, version, environment labels
+spec:
+  containers:
+  - name: test
+    image: nginx:1.24-alpine

@@ -1,0 +1,40 @@
+# ConstraintTemplate defines the schema and validation logic for a policy
+# This template enforces that resources have required labels
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredlabels
+  annotations:
+    description: "Requires resources to have specified labels for compliance and tracking"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredLabels
+      validation:
+        # Schema for the constraint parameters
+        openAPIV3Schema:
+          type: object
+          properties:
+            labels:
+              type: array
+              description: "List of required label keys"
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredlabels
+
+        # Violation is triggered if required labels are missing
+        violation[{"msg": msg, "details": {"missing_labels": missing}}] {
+          # Get the required labels from constraint parameters
+          required := {label | label := input.parameters.labels[_]}
+          # Get the labels present on the resource
+          provided := {label | input.review.object.metadata.labels[label]}
+          # Calculate which required labels are missing
+          missing := required - provided
+          # If any labels are missing, create violation message
+          count(missing) > 0
+          msg := sprintf("Resource is missing required labels: %v", [missing])
+        }

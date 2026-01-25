@@ -1,0 +1,24 @@
+# Constraint instance that enforces required labels for 5G NF pods
+# This ensures all network functions are properly labeled for compliance
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredLabels
+metadata:
+  name: telco-nf-labels
+spec:
+  # Enforcement action: deny will reject non-compliant resources
+  # Alternative: dryrun (for testing)
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "StatefulSet", "DaemonSet"]
+    namespaces:
+      - telco-core
+  parameters:
+    labels:
+      - "app"
+      - "component"
+      - "version"
+      - "environment"

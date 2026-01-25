@@ -1,0 +1,22 @@
+# This pod should be ACCEPTED by OPA because it has all required labels
+apiVersion: v1
+kind: Pod
+metadata:
+  name: compliant-test
+  namespace: telco-core
+  labels:
+    app: 5g-core
+    component: smf
+    version: v1.0.0
+    environment: development
+spec:
+  containers:
+  - name: smf
+    image: nginx:1.24-alpine
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "100m"
+      limits:
+        memory: "128Mi"
+        cpu: "200m"

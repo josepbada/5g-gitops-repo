@@ -1,0 +1,19 @@
+# Constraint to enforce resource limits on all 5G NF containers
+# This prevents resource exhaustion and ensures QoS
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sContainerLimits
+metadata:
+  name: telco-container-limits
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "StatefulSet", "DaemonSet"]
+    namespaces:
+      - telco-core
+  parameters:
+    enforceCPU: true
+    enforceMemory: true
