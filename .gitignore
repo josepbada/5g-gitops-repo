@@ -1,17 +1,39 @@
-# Kubernetes temporary files
-*.tmp
-*.swp
-*~
+# Terraform files to ignore
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/tfplan
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfvars.backup
+terraform/crash.log
+terraform/override.tf
+terraform/override.tf.json
+terraform/*_override.tf
+terraform/*_override.tf.json
 
-# Test results
-test-results/
-*.log
+# Ansible files to ignore
+ansible/*.retry
+ansible/.ansible/
+ansible/ansible.log
 
-# OS files
-.DS_Store
-Thumbs.db
+# Backup files
+backups/
 
-# Editor files
-*.bak
+# IDE and editor files
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# Windows files
+Thumbs.db
+Desktop.ini
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp

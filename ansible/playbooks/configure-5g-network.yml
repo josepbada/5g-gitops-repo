@@ -1,0 +1,178 @@
+---
+# Ansible playbook for configuring 5G network components
+# This playbook manages configuration and applies network policies
+
+- name: Configure 5G Network Components
+  hosts: localhost
+  gather_facts: yes
+  
+  vars:
+    namespace: telco5g
+  
+  tasks:
+    - name: Create NetworkPolicy for AMF
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: amf-network-policy
+            namespace: "{{ namespace }}"
+          spec:
+            podSelector:
+              matchLabels:
+                app: amf
+            policyTypes:
+              - Ingress
+              - Egress
+            ingress:
+              - from:
+                  - podSelector:
+                      matchLabels:
+                        component: 5g-core
+                ports:
+                  - protocol: TCP
+                    port: 8080
+            egress:
+              - to:
+                  - podSelector:
+                      matchLabels:
+                        app: nrf
+                ports:
+                  - protocol: TCP
+                    port: 8081
+              - to:
+                  - podSelector:
+                      matchLabels:
+                        app: smf
+                ports:
+                  - protocol: TCP
+                    port: 8082
+    
+    - name: Create NetworkPolicy for SMF
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: smf-network-policy
+            namespace: "{{ namespace }}"
+          spec:
+            podSelector:
+              matchLabels:
+                app: smf
+            policyTypes:
+              - Ingress
+              - Egress
+            ingress:
+              - from:
+                  - podSelector:
+                      matchLabels:
+                        app: amf
+                ports:
+                  - protocol: TCP
+                    port: 8082
+            egress:
+              - to:
+                  - podSelector:
+                      matchLabels:
+                        app: upf
+                ports:
+                  - protocol: TCP
+                    port: 8083
+              - to:
+                  - podSelector:
+                      matchLabels:
+                        app: nrf
+                ports:
+                  - protocol: TCP
+                    port: 8081
+    
+    - name: Create NetworkPolicy for UPF
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: upf-network-policy
+            namespace: "{{ namespace }}"
+          spec:
+            podSelector:
+              matchLabels:
+                app: upf
+            policyTypes:
+              - Ingress
+            ingress:
+              - from:
+                  - podSelector:
+                      matchLabels:
+                        app: smf
+                ports:
+                  - protocol: TCP
+                    port: 8083
+    
+    - name: Apply resource quotas for namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ResourceQuota
+          metadata:
+            name: telco5g-quota
+            namespace: "{{ namespace }}"
+          spec:
+            hard:
+              requests.cpu: "4"
+              requests.memory: 4Gi
+              limits.cpu: "8"
+              limits.memory: 8Gi
+              pods: "50"
+    
+    - name: Create LimitRange for pods
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: LimitRange
+          metadata:
+            name: telco5g-limits
+            namespace: "{{ namespace }}"
+          spec:
+            limits:
+              - max:
+                  cpu: "1"
+                  memory: 1Gi
+                min:
+                  cpu: "50m"
+                  memory: 64Mi
+                default:
+                  cpu: "200m"
+                  memory: 256Mi
+                defaultRequest:
+                  cpu: "100m"
+                  memory: 128Mi
+                type: Container
+    
+    - name: Display configuration summary
+      debug:
+        msg: |
+          ========================================
+          5G Network Configuration Summary
+          ========================================
+          NetworkPolicies created for:
+          - AMF (allows traffic from 5G components)
+          - SMF (allows traffic from AMF, connects to UPF and NRF)
+          - UPF (allows traffic from SMF)
+          
+          Resource limits applied:
+          - Namespace quota: 4 CPU / 4Gi RAM (requests)
+          - Pod limits: Max 1 CPU / 1Gi RAM per container
+          
+          To verify configuration:
+          kubectl get networkpolicies -n {{ namespace }}
+          kubectl get resourcequota -n {{ namespace }}
+          kubectl describe limitrange telco5g-limits -n {{ namespace }}
+          ========================================

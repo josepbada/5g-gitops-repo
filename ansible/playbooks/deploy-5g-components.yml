@@ -1,0 +1,159 @@
+---
+# Ansible playbook for deploying 5G Core Network Functions
+# This playbook creates Kubernetes resources for 5G components
+
+- name: Deploy 5G Telco Cloud Components
+  hosts: localhost
+  gather_facts: yes
+  
+  vars:
+    namespace: telco5g
+    components:
+      - name: amf
+        port: 8080
+        replicas: 2
+        component_type: AMF
+      - name: smf
+        port: 8082
+        replicas: 2
+        component_type: SMF
+      - name: upf
+        port: 8083
+        replicas: 3
+        component_type: UPF
+      - name: nrf
+        port: 8081
+        replicas: 2
+        component_type: NRF
+  
+  tasks:
+    - name: Display deployment information
+      debug:
+        msg: "Deploying 5G components to namespace {{ namespace }}"
+    
+    - name: Ensure namespace exists
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ namespace }}"
+            labels:
+              name: "{{ namespace }}"
+              environment: development
+              purpose: 5g-telco-cloud
+    
+    - name: Create ConfigMap for each component
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: "{{ item.name }}-config"
+            namespace: "{{ namespace }}"
+          data:
+            component.conf: |
+              component_name: {{ item.name }}
+              component_type: {{ item.component_type }}
+              service_port: {{ item.port }}
+              log_level: INFO
+      loop: "{{ components }}"
+      loop_control:
+        label: "{{ item.name }}"
+    
+    - name: Deploy 5G component Deployments
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: "{{ item.name }}"
+            namespace: "{{ namespace }}"
+            labels:
+              app: "{{ item.name }}"
+              component: 5g-core
+          spec:
+            replicas: "{{ item.replicas }}"
+            selector:
+              matchLabels:
+                app: "{{ item.name }}"
+            template:
+              metadata:
+                labels:
+                  app: "{{ item.name }}"
+                  component: 5g-core
+              spec:
+                containers:
+                  - name: "{{ item.name }}"
+                    image: nginx:alpine
+                    ports:
+                      - containerPort: "{{ item.port }}"
+                        name: service-port
+                    env:
+                      - name: COMPONENT_TYPE
+                        value: "{{ item.component_type }}"
+                      - name: LOG_LEVEL
+                        value: INFO
+                    resources:
+                      requests:
+                        cpu: 100m
+                        memory: 128Mi
+                      limits:
+                        cpu: 500m
+                        memory: 512Mi
+      loop: "{{ components }}"
+      loop_control:
+        label: "{{ item.name }}"
+    
+    - name: Create Services for 5G components
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: "{{ item.name }}-service"
+            namespace: "{{ namespace }}"
+            labels:
+              app: "{{ item.name }}"
+          spec:
+            selector:
+              app: "{{ item.name }}"
+            ports:
+              - name: service-port
+                port: "{{ item.port }}"
+                targetPort: "{{ item.port }}"
+                protocol: TCP
+            type: ClusterIP
+      loop: "{{ components }}"
+      loop_control:
+        label: "{{ item.name }}"
+    
+    - name: Wait for deployments to be ready
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: "{{ namespace }}"
+        name: "{{ item.name }}"
+        wait: yes
+        wait_timeout: 300
+      loop: "{{ components }}"
+      loop_control:
+        label: "{{ item.name }}"
+    
+    - name: Display deployment summary
+      debug:
+        msg: |
+          ========================================
+          5G Components Deployment Summary
+          ========================================
+          Namespace: {{ namespace }}
+          Components deployed: {{ components | map(attribute='name') | list | join(', ') }}
+          
+          To verify deployment:
+          kubectl get deployments -n {{ namespace }}
+          kubectl get services -n {{ namespace }}
+          kubectl get pods -n {{ namespace }}
+          ========================================
