@@ -12,7 +12,7 @@ output "cluster_info" {
 
 output "next_steps" {
   description = "Next steps after cluster creation"
-  value = <<-EOT
+  value       = <<-EOT
     Cluster '${var.cluster_name}' has been created successfully!
     
     Next steps:

@@ -11,7 +11,7 @@ resource "kubernetes_deployment" "prometheus" {
   metadata {
     name      = "prometheus"
     namespace = var.namespace
-    
+
     labels = {
       app       = "prometheus"
       component = "monitoring"
@@ -78,7 +78,7 @@ resource "kubernetes_service" "prometheus" {
   metadata {
     name      = "prometheus-service"
     namespace = var.namespace
-    
+
     labels = {
       app = "prometheus"
     }
@@ -143,7 +143,7 @@ resource "kubernetes_deployment" "grafana" {
   metadata {
     name      = "grafana"
     namespace = var.namespace
-    
+
     labels = {
       app       = "grafana"
       component = "monitoring"
@@ -208,7 +208,7 @@ resource "kubernetes_service" "grafana" {
   metadata {
     name      = "grafana-service"
     namespace = var.namespace
-    
+
     labels = {
       app = "grafana"
     }

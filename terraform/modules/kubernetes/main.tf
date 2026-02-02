@@ -38,7 +38,7 @@ resource "kubernetes_deployment" "component" {
   metadata {
     name      = var.component_name
     namespace = var.namespace
-    
+
     labels = {
       app       = var.component_name
       component = "5g-core"
@@ -93,23 +93,7 @@ resource "kubernetes_deployment" "component" {
             }
           }
 
-          liveness_probe {
-            http_get {
-              path = "/health"
-              port = var.port
-            }
-            initial_delay_seconds = 30
-            period_seconds        = 10
-          }
 
-          readiness_probe {
-            http_get {
-              path = "/ready"
-              port = var.port
-            }
-            initial_delay_seconds = 5
-            period_seconds        = 5
-          }
         }
       }
     }
@@ -121,7 +105,7 @@ resource "kubernetes_service" "component" {
   metadata {
     name      = "${var.component_name}-service"
     namespace = var.namespace
-    
+
     labels = {
       app       = var.component_name
       component = "5g-core"

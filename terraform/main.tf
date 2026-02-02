@@ -2,8 +2,8 @@
 # This file orchestrates the deployment of Kubernetes cluster and 5G components
 
 terraform {
-  required_version = ">= 1.7.0"
-  
+  required_version = ">= 1.6.0"
+
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
@@ -50,48 +50,45 @@ variable "memory" {
   default     = 4096
 }
 
-# Null resource to create Minikube cluster
-resource "null_resource" "minikube_cluster" {
-  provisioner "local-exec" {
-    command = "minikube start --driver=docker --cpus=${var.cpus} --memory=${var.memory} --kubernetes-version=v1.28.0 --cni=calico"
-    interpreter = ["PowerShell", "-Command"]
-  }
 
-  provisioner "local-exec" {
-    when    = destroy
-    command = "minikube delete"
-    interpreter = ["PowerShell", "-Command"]
-  }
-}
+# resource "null_resource" "minikube_cluster" {
+#   provisioner "local-exec" {
+#     command = "minikube start --driver=docker --cpus=${var.cpus} --memory=${var.memory} --kubernetes-version=v1.28.0 --cni=calico; Start-Sleep -Seconds 20; kubectl cluster-info"
+#    interpreter = ["PowerShell", "-Command"]
+#   }
+
+
+#   provisioner "local-exec" {
+#     when        = destroy
+#     command     = "minikube delete"
+#     interpreter = ["PowerShell", "-Command"]
+#   }
+# }
 
 # Configure Kubernetes provider to use Minikube
 provider "kubernetes" {
-  config_path = "~/.kube/config"
-  
-  depends_on = [null_resource.minikube_cluster]
+  config_path    = "~/.kube/config"
 }
 
 provider "helm" {
   kubernetes {
-    config_path = "~/.kube/config"
+    config_path    = "~/.kube/config"
   }
-  
-  depends_on = [null_resource.minikube_cluster]
 }
 
 # Create namespace for 5G components
 resource "kubernetes_namespace" "telco5g" {
   metadata {
     name = var.namespace
-    
+
     labels = {
       name        = var.namespace
       environment = "development"
       purpose     = "5g-telco-cloud"
     }
   }
-  
-  depends_on = [null_resource.minikube_cluster]
+
+
 }
 
 # Output values that can be used by other configurations

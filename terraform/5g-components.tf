@@ -7,7 +7,7 @@ module "amf" {
 
   namespace      = kubernetes_namespace.telco5g.metadata[0].name
   component_name = "amf"
-  image          = "nginx:alpine"  # Using nginx as placeholder for demo
+  image          = "nginx:alpine" # Using nginx as placeholder for demo
   replicas       = 2
   port           = 8080
 
@@ -26,7 +26,7 @@ module "smf" {
 
   namespace      = kubernetes_namespace.telco5g.metadata[0].name
   component_name = "smf"
-  image          = "nginx:alpine"  # Using nginx as placeholder for demo
+  image          = "nginx:alpine" # Using nginx as placeholder for demo
   replicas       = 2
   port           = 8082
 
@@ -46,7 +46,7 @@ module "upf" {
 
   namespace      = kubernetes_namespace.telco5g.metadata[0].name
   component_name = "upf"
-  image          = "nginx:alpine"  # Using nginx as placeholder for demo
+  image          = "nginx:alpine" # Using nginx as placeholder for demo
   replicas       = 3
   port           = 8083
 
@@ -65,7 +65,7 @@ module "nrf" {
 
   namespace      = kubernetes_namespace.telco5g.metadata[0].name
   component_name = "nrf"
-  image          = "nginx:alpine"  # Using nginx as placeholder for demo
+  image          = "nginx:alpine" # Using nginx as placeholder for demo
   replicas       = 2
   port           = 8081
 
@@ -117,7 +117,7 @@ output "monitoring_endpoints" {
 
 output "deployment_summary" {
   description = "Summary of all deployed components"
-  value = <<-EOT
+  value       = <<-EOT
     ========================================
     5G Telco Cloud Deployment Summary
     ========================================
