@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: open5gs-smf
@@ -30,11 +30,8 @@ spec:
         
         ports:
         - name: http
-          containerPort: 7777
+          containerPort: 80
           protocol: TCP
-        - name: pfcp
-          containerPort: 8805
-          protocol: UDP
         
         env:
         - name: DNN
@@ -54,22 +51,24 @@ spec:
         
         resources:
           requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
             cpu: "200m"
             memory: "256Mi"
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
         
         livenessProbe:
-          tcpSocket:
-            port: 7777
-          initialDelaySeconds: 30
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
           periodSeconds: 10
         
         readinessProbe:
-          tcpSocket:
-            port: 7777
-          initialDelaySeconds: 10
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
           periodSeconds: 5
       
       restartPolicy: Always

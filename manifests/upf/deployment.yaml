@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: open5gs-upf
@@ -28,18 +28,10 @@ spec:
         image: nginx:alpine
         imagePullPolicy: IfNotPresent
         
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-        
         ports:
-        - name: gtpu
-          containerPort: 2152
-          protocol: UDP
-        - name: pfcp
-          containerPort: 8805
-          protocol: UDP
+        - name: http
+          containerPort: 80
+          protocol: TCP
         
         env:
         - name: DNN
@@ -52,28 +44,24 @@ spec:
         
         resources:
           requests:
-            cpu: "300m"
-            memory: "512Mi"
+            cpu: "100m"
+            memory: "128Mi"
           limits:
-            cpu: "800m"
-            memory: "1Gi"
+            cpu: "200m"
+            memory: "256Mi"
         
         livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - "pgrep -f open5gs-upfd"
-          initialDelaySeconds: 30
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
           periodSeconds: 10
         
         readinessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - "pgrep -f open5gs-upfd"
-          initialDelaySeconds: 10
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
           periodSeconds: 5
       
       restartPolicy: Always
