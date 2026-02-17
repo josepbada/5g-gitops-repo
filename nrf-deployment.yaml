@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nrf-deployment
+  namespace: josepbada-dev
+  labels:
+    app: nrf
+    component: 5g-core
+    function: network-repository
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nrf
+  template:
+    metadata:
+      labels:
+        app: nrf
+        component: 5g-core
+        function: network-repository
+    spec:
+      containers:
+      - name: nrf
+        image: nginxinc/nginx-unprivileged:latest
+        ports:
+        - containerPort: 8080
+          name: http-api
+          protocol: TCP
+        env:
+        - name: NF_TYPE
+          value: "NRF"
+        - name: SERVICE_NAME
+          value: "Network Repository Function"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5

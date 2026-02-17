@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nrf-service
+  namespace: josepbada-dev
+  labels:
+    app: nrf
+    component: 5g-core
+spec:
+  type: ClusterIP
+  selector:
+    app: nrf
+  ports:
+  - name: http-api
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
