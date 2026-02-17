@@ -1,0 +1,67 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open5gs-upf
+  namespace: telco5g
+  labels:
+    app: open5gs-upf
+    component: upf
+    plane: user
+    tier: core
+    managed-by: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open5gs-upf
+  template:
+    metadata:
+      labels:
+        app: open5gs-upf
+        component: upf
+        plane: user
+        tier: core
+    spec:
+      serviceAccountName: 5g-service-account
+      containers:
+      - name: upf
+        image: nginx:alpine
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        
+        env:
+        - name: DNN
+          valueFrom:
+            configMapKeyRef:
+              name: upf-config
+              key: dnn
+        - name: COMPONENT_NAME
+          value: "upf"
+        
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      
+      restartPolicy: Always

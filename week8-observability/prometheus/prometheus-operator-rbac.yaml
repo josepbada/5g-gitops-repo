@@ -1,0 +1,71 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-operator-full
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - secrets
+  - configmaps
+  verbs: ["list", "watch", "get"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources:
+  - alertmanagers
+  - alertmanagers/finalizers
+  - alertmanagers/status
+  - alertmanagerconfigs
+  - prometheuses
+  - prometheuses/finalizers
+  - prometheuses/status
+  - prometheusrules
+  - servicemonitors
+  - podmonitors
+  - probes
+  - thanosrulers
+  - thanosrulers/finalizers
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources:
+  - statefulsets
+  verbs: ["*"]
+- apiGroups: [""]
+  resources:
+  - services
+  - services/finalizers
+  - endpoints
+  verbs: ["get", "create", "update", "delete", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs: ["list", "delete", "watch"]
+- apiGroups: [""]
+  resources:
+  - events
+  verbs: ["get", "list", "watch", "create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-operator-helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-operator-full
+subjects:
+- kind: ServiceAccount
+  name: prometheus-kube-prometheus-operator
+  namespace: telco-observability
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-operator-standalone
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-operator-full
+subjects:
+- kind: ServiceAccount
+  name: prometheus-operator
+  namespace: telco-observability

@@ -1,0 +1,173 @@
+# Network Function Configuration Template
+# Demonstrates how configurations are parameterized for different deployments
+
+# AMF Configuration Template
+amf_config_template: |
+  logger:
+    file: /var/log/open5gs/amf.log
+    level: {{ log_level | default('info') }}
+
+  amf:
+    sbi:
+      server:
+        - address: 0.0.0.0
+          port: 7777
+      client:
+        nrf:
+          - uri: http://{{ nrf_sbi_address }}:{{ nrf_sbi_port }}
+    
+    ngap:
+      server:
+        - address: {{ amf_n2_address }}
+    
+    metrics:
+      server:
+        - address: 0.0.0.0
+          port: 9090
+    
+    guami:
+      - plmn_id:
+          mcc: {{ mcc }}
+          mnc: {{ mnc }}
+        amf_id:
+          region: 2
+          set: 1
+    
+    tai:
+      - plmn_id:
+          mcc: {{ mcc }}
+          mnc: {{ mnc }}
+        tac: {{ tac }}
+    
+    plmn_support:
+      - plmn_id:
+          mcc: {{ mcc }}
+          mnc: {{ mnc }}
+        s_nssai:
+          - sst: 1
+            sd: {{ slice_id | default('000001') }}
+    
+    security:
+      integrity_order: [{{ integrity_algorithms }}]
+      ciphering_order: [{{ ciphering_algorithms }}]
+    
+    network_name:
+      full: {{ network_full_name | default('Open5GS') }}
+      short: {{ network_short_name | default('O5GS') }}
+    
+    amf_name: {{ amf_name | default('open5gs-amf') }}
+
+# SMF Configuration Template
+smf_config_template: |
+  logger:
+    file: /var/log/open5gs/smf.log
+    level: {{ log_level | default('info') }}
+
+  smf:
+    sbi:
+      server:
+        - address: 0.0.0.0
+          port: 7777
+      client:
+        nrf:
+          - uri: http://{{ nrf_sbi_address }}:{{ nrf_sbi_port }}
+    
+    pfcp:
+      server:
+        - address: {{ smf_n4_address }}
+      client:
+        upf:
+          - address: {{ upf_n4_address }}
+    
+    gtpc:
+      server:
+        - address: 127.0.0.7
+    
+    gtpu:
+      server:
+        - address: 127.0.0.7
+    
+    metrics:
+      server:
+        - address: 0.0.0.0
+          port: 9090
+    
+    subnet:
+      - addr: {{ ue_subnet }}
+        dnn: {{ dnn | default('internet') }}
+    
+    dns:
+      - {{ primary_dns | default('8.8.8.8') }}
+      - {{ secondary_dns | default('8.8.4.4') }}
+    
+    mtu: {{ mtu | default(1400) }}
+    
+    freeDiameter: /etc/freeDiameter/smf.conf
+
+# UPF Configuration Template
+upf_config_template: |
+  logger:
+    file: /var/log/open5gs/upf.log
+    level: {{ log_level | default('info') }}
+
+  upf:
+    pfcp:
+      server:
+        - address: {{ upf_n4_address }}
+    
+    gtpu:
+      server:
+        - address: {{ upf_n3_address }}
+    
+    subnet:
+      - addr: {{ ue_subnet }}
+        dnn: {{ dnn | default('internet') }}
+        dev: ogstun
+    
+    metrics:
+      server:
+        - address: 0.0.0.0
+          port: 9090
+
+# Parameter Sets for Different Environments
+parameter_sets:
+  development:
+    mcc: "001"
+    mnc: "01"
+    tac: "0001"
+    log_level: "debug"
+    nrf_sbi_address: "nrf-service.open5gs.svc.cluster.local"
+    nrf_sbi_port: "7777"
+    amf_n2_address: "10.100.50.2"
+    smf_n4_address: "10.100.52.2"
+    upf_n4_address: "10.100.52.3"
+    upf_n3_address: "10.100.51.3"
+    ue_subnet: "10.45.0.0/16"
+    dnn: "internet"
+    primary_dns: "8.8.8.8"
+    secondary_dns: "8.8.4.4"
+    integrity_algorithms: "NIA2, NIA1, NIA0"
+    ciphering_algorithms: "NEA0, NEA1, NEA2"
+    network_full_name: "Open5GS Dev"
+    network_short_name: "O5GS-D"
+    
+  production:
+    mcc: "310"
+    mnc: "170"
+    tac: "1"
+    log_level: "info"
+    nrf_sbi_address: "nrf-service.open5gs.svc.cluster.local"
+    nrf_sbi_port: "7777"
+    amf_n2_address: "10.100.50.2"
+    smf_n4_address: "10.100.52.2"
+    upf_n4_address: "10.100.52.3"
+    upf_n3_address: "10.100.51.3"
+    ue_subnet: "10.45.0.0/16"
+    dnn: "internet"
+    primary_dns: "8.8.8.8"
+    secondary_dns: "1.1.1.1"
+    integrity_algorithms: "NIA2, NIA1"
+    ciphering_algorithms: "NEA2, NEA1"
+    network_full_name: "Enterprise 5G"
+    network_short_name: "E-5G"
+    slice_id: "000001"

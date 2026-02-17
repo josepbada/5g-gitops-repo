@@ -1,0 +1,74 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open5gs-smf
+  namespace: telco5g
+  labels:
+    app: open5gs-smf
+    component: smf
+    plane: control
+    tier: core
+    managed-by: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open5gs-smf
+  template:
+    metadata:
+      labels:
+        app: open5gs-smf
+        component: smf
+        plane: control
+        tier: core
+    spec:
+      serviceAccountName: 5g-service-account
+      containers:
+      - name: smf
+        image: nginx:alpine
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        
+        env:
+        - name: DNN
+          valueFrom:
+            configMapKeyRef:
+              name: smf-config
+              key: dnn
+        - name: UE_SUBNET
+          valueFrom:
+            configMapKeyRef:
+              name: smf-config
+              key: subnet
+        - name: UPF_ADDRESS
+          value: "open5gs-upf-service.telco5g.svc.cluster.local"
+        - name: COMPONENT_NAME
+          value: "smf"
+        
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      
+      restartPolicy: Always

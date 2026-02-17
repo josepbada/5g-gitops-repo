@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ausf-config
+  namespace: open5gs
+  labels:
+    app: ausf
+    component: control-plane
+    deployment-phase: day0-foundation
+data:
+  ausf.yaml: |
+    logger:
+      level: info
+    
+    ausf:
+      sbi:
+        - addr: 0.0.0.0
+          port: 7777
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: udm-config
+  namespace: open5gs
+  labels:
+    app: udm
+    component: control-plane
+    deployment-phase: day0-foundation
+data:
+  udm.yaml: |
+    logger:
+      level: info
+    
+    udm:
+      sbi:
+        - addr: 0.0.0.0
+          port: 7777

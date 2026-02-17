@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: telco-core
+  labels:
+    app: mongodb
+    component: database
+    tier: data-layer
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+    protocol: TCP
+    name: mongodb

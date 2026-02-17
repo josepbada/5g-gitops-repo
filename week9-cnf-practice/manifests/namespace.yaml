@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: telco-core
+  labels:
+    environment: development
+    purpose: 5g-core-network
+    week: week9
+  annotations:
+    description: "Dedicated namespace for 5G Core CNF deployment"
+    owner: "telco-operations"
+    compliance: "3gpp-standards"

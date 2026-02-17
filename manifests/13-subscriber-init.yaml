@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: subscriber-data
+  namespace: open5gs
+  labels:
+    component: configuration
+    phase: day1
+data:
+  init-subscriber.js: |
+    // MongoDB initialization script for subscriber data
+    // This represents Day 1 configuration in the service lifecycle
+    
+    // Switch to Open5GS database
+    db = db.getSiblingDB('open5gs');
+    
+    // Create subscriber with test credentials
+    // IMSI: 001010000000001
+    // K: 465B5CE8B199B49FAA5F0A2EE238A6BC
+    // OPc: E8ED289DEBA952E4283B54E88E6183CA
+    
+    db.subscribers.insertOne({
+      "imsi": "001010000000001",
+      "subscribed_rau_tau_timer": 12,
+      "network_access_mode": 0,
+      "subscriber_status": 0,
+      "access_restriction_data": 32,
+      "slice": [
+        {
+          "sst": 1,
+          "default_indicator": true,
+          "session": [
+            {
+              "name": "internet",
+              "type": 3,
+              "pcc_rule": [],
+              "ambr": {
+                "uplink": {
+                  "value": 1,
+                  "unit": 3
+                },
+                "downlink": {
+                  "value": 1,
+                  "unit": 3
+                }
+              },
+              "qos": {
+                "index": 9,
+                "arp": {
+                  "priority_level": 8,
+                  "pre_emption_capability": 1,
+                  "pre_emption_vulnerability": 1
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "ambr": {
+        "uplink": {
+          "value": 1,
+          "unit": 3
+        },
+        "downlink": {
+          "value": 1,
+          "unit": 3
+        }
+      },
+      "security": {
+        "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+        "amf": "8000",
+        "op": null,
+        "opc": "E8ED289DEBA952E4283B54E88E6183CA"
+      },
+      "schema_version": 1,
+      "__v": 0
+    });
+    
+    print("Subscriber initialized: IMSI 001010000000001");
+    print("K: 465B5CE8B199B49FAA5F0A2EE238A6BC");
+    print("OPc: E8ED289DEBA952E4283B54E88E6183CA");
+    print("Network Slice: SST 1 (eMBB)");
+    print("DNN: internet");
+    print("QoS: 5QI 9 (default best effort)");
+    print("AMBR: 1 Gbps UL/DL");
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-subscriber-data
+  namespace: open5gs
+  labels:
+    component: configuration
+    phase: day1
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mongo-init
+        image: mongo:5.0
+        command:
+        - mongo
+        - mongodb://mongodb:27017/open5gs
+        - /scripts/init-subscriber.js
+        volumeMounts:
+        - name: init-script
+          mountPath: /scripts
+      volumes:
+      - name: init-script
+        configMap:
+          name: subscriber-data
+  backoffLimit: 3

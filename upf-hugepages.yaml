@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upf-hugepages
+  namespace: 5g-core
+  labels:
+    app: upf
+    version: hugepages
+    component: user-plane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upf
+      version: hugepages
+  template:
+    metadata:
+      labels:
+        app: upf
+        version: hugepages
+        component: user-plane
+    spec:
+      containers:
+      - name: upf
+        image: nginx:latest
+        command: ["nginx"]
+        args: ["-c", "/etc/upf/nginx.conf", "-g", "daemon off;"]
+        
+        resources:
+          requests:
+            cpu: "2000m"
+            memory: "2Gi"
+            hugepages-2Mi: "256Mi"  # Request 256MB of 2MB huge pages
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+            hugepages-2Mi: "256Mi"  # Must match request
+        
+        env:
+        - name: UPF_MODE
+          value: "hugepages"
+        - name: USE_HUGEPAGES
+          value: "true"
+        - name: HUGEPAGE_SIZE
+          value: "2Mi"
+        
+        # In a real UPF, huge pages would be mounted here
+        volumeMounts:
+        - name: hugepages
+          mountPath: /dev/hugepages
+        
+      volumes:
+      - name: hugepages
+        emptyDir:
+          medium: HugePages

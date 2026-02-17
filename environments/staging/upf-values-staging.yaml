@@ -1,0 +1,23 @@
+# Staging environment overrides for UPF
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 450m
+    memory: 384Mi
+  requests:
+    cpu: 225m
+    memory: 192Mi
+
+upf:
+  config:
+    upfId: "upf-staging-001"
+    n3Interface: "192.168.20.10"
+    n4Interface: "192.168.20.11"
+    n6Interface: "192.168.20.12"
+    dnn: "internet-staging"
+
+labels:
+  environment: staging
+  component: upf
+  network: 5g-core

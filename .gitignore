@@ -1,0 +1,39 @@
+# Terraform files to ignore
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/tfplan
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfvars.backup
+terraform/crash.log
+terraform/override.tf
+terraform/override.tf.json
+terraform/*_override.tf
+terraform/*_override.tf.json
+
+# Ansible files to ignore
+ansible/*.retry
+ansible/.ansible/
+ansible/ansible.log
+
+# Backup files
+backups/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Windows files
+Thumbs.db
+Desktop.ini
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp

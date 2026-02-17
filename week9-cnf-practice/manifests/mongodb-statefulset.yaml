@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: telco-core
+  labels:
+    app: mongodb
+    component: database
+    tier: data-layer
+    cnf-type: stateful-datastore
+spec:
+  serviceName: mongodb-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        component: database
+        tier: data-layer
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9216"
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:6.0
+        ports:
+        - containerPort: 27017
+          name: mongodb
+        env:
+        - name: MONGO_INITDB_DATABASE
+          value: "open5gs"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: mongodb-storage
+          mountPath: /data/db
+        - name: mongodb-config
+          mountPath: /etc/mongo
+        - name: mongodb-init
+          mountPath: /docker-entrypoint-initdb.d
+        livenessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 6
+        readinessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 45
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 6
+      volumes:
+      - name: mongodb-storage
+        persistentVolumeClaim:
+          claimName: mongodb-storage
+      - name: mongodb-config
+        configMap:
+          name: mongodb-config
+          items:
+          - key: mongo.conf
+            path: mongod.conf
+      - name: mongodb-init
+        configMap:
+          name: mongodb-config
+          items:
+          - key: init-script.js
+            path: init-mongo.js

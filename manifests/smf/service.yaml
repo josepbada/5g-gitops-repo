@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: open5gs-smf-service
+  namespace: telco5g
+  labels:
+    app: open5gs-smf
+    component: smf
+    plane: control
+    tier: core
+    managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: open5gs-smf
+  ports:
+  - name: http-n7
+    port: 7777
+    targetPort: 7777
+    protocol: TCP
+  - name: pfcp-n4
+    port: 8805
+    targetPort: 8805
+    protocol: UDP
+  sessionAffinity: ClientIP

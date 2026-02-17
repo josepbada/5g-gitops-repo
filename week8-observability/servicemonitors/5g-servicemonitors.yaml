@@ -1,0 +1,72 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: amf-monitor
+  namespace: telco-observability
+  labels:
+    app: amf
+    team: telco
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: amf
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics.txt
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: smf-monitor
+  namespace: telco-observability
+  labels:
+    app: smf
+    team: telco
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: smf
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics.txt
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: upf-monitor
+  namespace: telco-observability
+  labels:
+    app: upf
+    team: telco
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: upf
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics.txt
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ausf-monitor
+  namespace: telco-observability
+  labels:
+    app: ausf
+    team: telco
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: ausf
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics.txt

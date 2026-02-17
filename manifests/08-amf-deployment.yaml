@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amf
+  namespace: open5gs
+  labels:
+    app: amf
+    component: control-plane
+    function: access-mobility-management
+    deployment-phase: day0-core
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: amf
+  template:
+    metadata:
+      labels:
+        app: amf
+        component: control-plane
+        function: access-mobility-management
+        deployment-phase: day0-core
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[
+          {
+            "name": "n2-network",
+            "interface": "n2",
+            "ips": ["10.100.50.10/24"]
+          }
+        ]'
+    spec:
+      containers:
+      - name: amf
+        image: openverso/open5gs:latest
+        command: ["/opt/open5gs/bin/open5gs-amfd"]
+        args: ["-c", "/etc/open5gs/amf.yaml"]
+        ports:
+        - containerPort: 7777
+          name: sbi
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        - containerPort: 38412
+          name: ngap
+          protocol: SCTP
+        resources:
+          requests:
+            cpu: "400m"
+            memory: "512Mi"
+          limits:
+            cpu: "800m"
+            memory: "1Gi"
+        volumeMounts:
+        - name: amf-config
+          mountPath: /etc/open5gs
+        livenessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7777
+          initialDelaySeconds: 15
+          periodSeconds: 5
+      volumes:
+      - name: amf-config
+        configMap:
+          name: amf-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: amf-service
+  namespace: open5gs
+  labels:
+    app: amf
+    component: control-plane
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7777
+    targetPort: 7777
+    protocol: TCP
+    name: sbi
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  - port: 38412
+    targetPort: 38412
+    protocol: SCTP
+    name: ngap
+  selector:
+    app: amf

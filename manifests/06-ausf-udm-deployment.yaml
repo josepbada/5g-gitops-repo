@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ausf
+  namespace: open5gs
+  labels:
+    app: ausf
+    component: control-plane
+    function: authentication
+    deployment-phase: day0-foundation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ausf
+  template:
+    metadata:
+      labels:
+        app: ausf
+        component: control-plane
+        function: authentication
+        deployment-phase: day0-foundation  # ← AGREGAR
+    spec:
+      containers:
+      - name: ausf
+        image: openverso/open5gs:latest
+        command: ["/opt/open5gs/bin/open5gs-ausfd"]
+        args: ["-c", "/etc/open5gs/ausf.yaml"]
+        ports:
+        - containerPort: 7777
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        volumeMounts:
+        - name: ausf-config
+          mountPath: /etc/open5gs
+        livenessProbe:
+          exec:
+            command: ["pgrep", "open5gs-ausfd"]
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          exec:
+            command: ["pgrep", "open5gs-ausfd"]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: ausf-config
+        configMap:
+          name: ausf-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ausf-service
+  namespace: open5gs
+  labels:
+    app: ausf
+    component: control-plane
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7777
+    targetPort: 7777
+    protocol: TCP
+  selector:
+    app: ausf
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: udm
+  namespace: open5gs
+  labels:
+    app: udm
+    component: control-plane
+    function: subscription-management
+    deployment-phase: day0-foundation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: udm
+  template:
+    metadata:
+      labels:
+        app: udm
+        component: control-plane
+        function: subscription-management
+        deployment-phase: day0-foundation  # ← AGREGAR
+    spec:
+      containers:
+      - name: udm
+        image: openverso/open5gs:latest
+        command: ["/opt/open5gs/bin/open5gs-udmd"]
+        args: ["-c", "/etc/open5gs/udm.yaml"]
+        ports:
+        - containerPort: 7777
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        volumeMounts:
+        - name: udm-config
+          mountPath: /etc/open5gs
+        livenessProbe:
+          exec:
+            command: ["pgrep", "open5gs-udmd"]
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          exec:
+            command: ["pgrep", "open5gs-udmd"]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: udm-config
+        configMap:
+          name: udm-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: udm-service
+  namespace: open5gs
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7777
+    targetPort: 7777
+    protocol: TCP
+  selector:
+    app: udm

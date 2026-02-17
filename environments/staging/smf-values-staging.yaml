@@ -1,0 +1,22 @@
+# Staging environment overrides for SMF
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 384Mi
+  requests:
+    cpu: 125m
+    memory: 192Mi
+
+smf:
+  config:
+    smfId: "smf-staging-001"
+    plmnId: "20899"
+    upfAddress: "upf-release-5g-upf:8805"
+    amfAddress: "amf-release-5g-amf:8888"
+
+labels:
+  environment: staging
+  component: smf
+  plane: control

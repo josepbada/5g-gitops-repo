@@ -1,0 +1,129 @@
+# Production Environment Configuration for AMF
+replicaCount: 1
+
+image:
+  repository: nginx
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 2Gi
+  requests:
+    cpu: 100m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+# Production AMF Configuration with real operator values
+amfConfig:
+  guami:
+    plmnId:
+      mcc: "310"
+      mnc: "410"
+    amfRegionId: "02"
+    amfSetId: "002"
+    amfPointer: "01"
+  servedGuamiList:
+    - plmnId:
+        mcc: "310"
+        mnc: "410"
+      amfRegionId: "02"
+      amfSetId: "002"
+      amfPointer: "01"
+    - plmnId:
+        mcc: "310"
+        mnc: "410"
+      amfRegionId: "02"
+      amfSetId: "002"
+      amfPointer: "02"
+  supportedTAList:
+    - plmnId:
+        mcc: "310"
+        mnc: "410"
+      tac: "000100"
+    - plmnId:
+        mcc: "310"
+        mnc: "410"
+      tac: "000101"
+    - plmnId:
+        mcc: "310"
+        mnc: "410"
+      tac: "000102"
+  networkName:
+    full: "5G Telco Cloud Production Network"
+    short: "5G-TCN-PROD"
+  nfServices:
+    namf_communication:
+      port: 8080
+      path: "/namf-comm/v1"
+    namf_eventexposure:
+      port: 8080
+      path: "/namf-evts/v1"
+
+# Strict network policy for production
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: telco-core-5g
+      - podSelector:
+          matchLabels:
+            app: gnb-5g
+      ports:
+      - protocol: TCP
+        port: 38412
+      - protocol: TCP
+        port: 8080
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: telco-core-5g
+      - podSelector:
+          matchLabels:
+            app: smf-5g
+      ports:
+      - protocol: TCP
+        port: 8080
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: telco-core-5g
+      - podSelector:
+          matchLabels:
+            app: ausf-5g
+      ports:
+      - protocol: TCP
+        port: 8080
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: kube-system
+      - podSelector:
+          matchLabels:
+            k8s-app: kube-dns
+      ports:
+      - protocol: UDP
+        port: 53
+
+# Production-specific pod annotations
+podAnnotations:
+  telco.5g/environment: "production"
+  telco.5g/network-function: "amf"
+  telco.5g/sla-tier: "critical"
+
+# Pod disruption budget for high availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
