@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: smf-service
+  namespace: josepbada-dev
+  labels:
+    app: smf
+    component: 5g-core
+spec:
+  type: ClusterIP
+  selector:
+    app: smf
+  ports:
+  - name: http-api
+    protocol: TCP
+    port: 8082
+    targetPort: 8080

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upf-deployment
+  namespace: josepbada-dev
+  labels:
+    app: upf
+    component: 5g-core
+    function: user-plane
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: upf
+  template:
+    metadata:
+      labels:
+        app: upf
+        component: 5g-core
+        function: user-plane
+    spec:
+      containers:
+      - name: upf
+        image: nginxinc/nginx-unprivileged:latest
+        ports:
+        - containerPort: 8080
+          name: http-api
+          protocol: TCP
+        - containerPort: 2152
+          name: gtp-u
+          protocol: UDP
+        env:
+        - name: NF_TYPE
+          value: "UPF"
+        - name: SERVICE_NAME
+          value: "User Plane Function"
+        - name: NRF_ENDPOINT
+          value: "http://nrf-service:8080"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "300m"
+          limits:
+            memory: "1Gi"
+            cpu: "600m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5

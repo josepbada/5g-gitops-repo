@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: upf-service
+  namespace: josepbada-dev
+  labels:
+    app: upf
+    component: 5g-core
+spec:
+  type: ClusterIP
+  selector:
+    app: upf
+  ports:
+  - name: http-api
+    protocol: TCP
+    port: 8084
+    targetPort: 8080
+  - name: gtp-u
+    protocol: UDP
+    port: 2152
+    targetPort: 2152
