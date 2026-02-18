@@ -1,0 +1,19 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nrf-route
+  namespace: josepbada-dev
+  labels:
+    app: nrf
+    component: 5g-core
+spec:
+  to:
+    kind: Service
+    name: nrf-service
+    weight: 100
+  port:
+    targetPort: http-api
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
