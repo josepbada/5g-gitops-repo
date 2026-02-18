@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: telco-monitor-binding
+  namespace: josepbada-dev
+  labels:
+    component: 5g-core
+subjects:
+- kind: ServiceAccount
+  name: telco-monitor
+  namespace: telco-5g-core
+roleRef:
+  kind: Role
+  name: 5g-core-readonly
+  apiGroup: rbac.authorization.k8s.io
