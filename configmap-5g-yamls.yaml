@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 5g-deployment-files
+  namespace: josepbada-dev
+  labels:
+    component: 5g-core
+data:
+  nrf-deployment.yaml: |
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: nrf-deployment
+      namespace: josepbada-dev
+      labels:
+        app: nrf
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: nrf
+      template:
+        metadata:
+          labels:
+            app: nrf
+        spec:
+          containers:
+          - name: nrf
+            image: nginxinc/nginx-unprivileged:latest
+            ports:
+            - containerPort: 8080
+  nrf-service.yaml: |
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: nrf-service
+      namespace: josepbada-dev
+    spec:
+      selector:
+        app: nrf
+      ports:
+      - port: 8080
+        targetPort: 8080
+  amf-deployment.yaml: |
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: amf-deployment
+      namespace: josepbada-dev
+      labels:
+        app: amf
+    spec:
+      replicas: 2
+      selector:
+        matchLabels:
+          app: amf
+      template:
+        metadata:
+          labels:
+            app: amf
+        spec:
+          containers:
+          - name: amf
+            image: nginxinc/nginx-unprivileged:latest
+            ports:
+            - containerPort: 8080
+  amf-service.yaml: |
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: amf-service
+      namespace: josepbada-dev
+    spec:
+      selector:
+        app: amf
+      ports:
+      - port: 8081
+        targetPort: 8080

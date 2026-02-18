@@ -1,0 +1,65 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: deploy-5g-core-pipeline
+  namespace: josepbada-dev
+  labels:
+    component: 5g-core
+spec:
+  workspaces:
+  - name: shared-workspace
+    description: Workspace containing the 5G Core YAML files
+  tasks:
+  - name: deploy-nrf
+    taskRef:
+      name: deploy-5g-core
+    params:
+    - name: component-name
+      value: "nrf"
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+  - name: deploy-amf
+    taskRef:
+      name: deploy-5g-core
+    params:
+    - name: component-name
+      value: "amf"
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    runAfter:
+    - deploy-nrf
+  - name: deploy-smf
+    taskRef:
+      name: deploy-5g-core
+    params:
+    - name: component-name
+      value: "smf"
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    runAfter:
+    - deploy-nrf
+  - name: deploy-upf
+    taskRef:
+      name: deploy-5g-core
+    params:
+    - name: component-name
+      value: "upf"
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    runAfter:
+    - deploy-smf
+  - name: deploy-nssf
+    taskRef:
+      name: deploy-5g-core
+    params:
+    - name: component-name
+      value: "nssf"
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    runAfter:
+    - deploy-nrf

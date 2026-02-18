@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy-5g-core
+  namespace: josepbada-dev
+  labels:
+    component: 5g-core
+    pipeline: deployment
+spec:
+  params:
+  - name: component-name
+    type: string
+    description: Name of the 5G component to deploy (e.g., nrf, amf, smf)
+  steps:
+  - name: deploy
+    image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+    script: |
+      #!/bin/bash
+      set -e
+      echo "Deploying $(params.component-name)..."
+      oc apply -f /workspace/source/$(params.component-name)-deployment.yaml
+      oc apply -f /workspace/source/$(params.component-name)-service.yaml
+      
+      echo "Waiting for $(params.component-name) to be ready..."
+      oc wait --for=condition=available --timeout=300s deployment/$(params.component-name)-deployment -n telco-5g-core
+      
+      echo "$(params.component-name) deployed successfully!"
+  workspaces:
+  - name: source
+    description: The workspace containing the YAML files
