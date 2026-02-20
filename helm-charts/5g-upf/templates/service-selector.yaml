@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: 5g-upf-selector
+  labels:
+    {{- include "5g-upf.labels" . | nindent 4 }}
+    service: selector
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ .Values.service.port }}
+    targetPort: {{ .Values.service.targetPort }}
+    protocol: {{ .Values.service.protocol }}
+    name: n3-interface
+  selector:
+    app.kubernetes.io/name: 5g-upf
+    version: {{ .Values.labels.version | default "blue" }}

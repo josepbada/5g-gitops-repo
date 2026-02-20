@@ -1,0 +1,40 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smf-config
+  namespace: open5gs
+  labels:
+    app: smf
+    component: control-plane
+    deployment-phase: day0-core
+data:
+  smf.yaml: |
+    logger:
+      level: info
+    
+    smf:
+      sbi:
+        - addr: 0.0.0.0
+          port: 7777
+      
+      nrf:
+        - uri: http://nrf-service:7777
+      
+      pfcp:
+        - addr: 10.100.52.10
+      
+      gtpc:
+        - addr: 127.0.0.7
+      
+      gtpu:
+        - addr: 127.0.0.7
+      
+      subnet:
+        - addr: 10.45.0.0/16
+          dnn: internet
+      
+      dns:
+        - 8.8.8.8
+        - 8.8.4.4
+      
+      mtu: 1400

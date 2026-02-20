@@ -1,0 +1,22 @@
+# Production environment overrides for SMF
+replicaCount: 2  # Redundancy for production
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 512Mi
+  requests:
+    cpu: 150m
+    memory: 256Mi
+
+smf:
+  config:
+    smfId: "smf-prod-001"
+    plmnId: "20899"
+    upfAddress: "upf-release-5g-upf:8805"
+    amfAddress: "amf-release-5g-amf:8888"
+
+labels:
+  environment: production
+  component: smf
+  plane: control

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amf-deployment
+  namespace: josepbada-dev
+  labels:
+    app: amf
+    component: 5g-core
+    function: access-mobility
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: amf
+  template:
+    metadata:
+      labels:
+        app: amf
+        component: 5g-core
+        function: access-mobility
+    spec:
+      containers:
+      - name: amf
+        image: nginxinc/nginx-unprivileged:latest
+        ports:
+        - containerPort: 8080
+          name: http-api
+          protocol: TCP
+        - containerPort: 38412
+          name: ngap
+          protocol: TCP
+        env:
+        - name: NF_TYPE
+          value: "AMF"
+        - name: SERVICE_NAME
+          value: "Access and Mobility Function"
+        - name: NRF_ENDPOINT
+          value: "http://nrf-service:8080"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "400m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu-stress
+  namespace: 5g-core
+spec:
+  replicas: 3  # Create 3 stress pods to compete for CPU
+  selector:
+    matchLabels:
+      app: stress
+  template:
+    metadata:
+      labels:
+        app: stress
+    spec:
+      containers:
+      - name: stress
+        image: polinux/stress
+        command: ["stress"]
+        args: ["--cpu", "2", "--timeout", "300s"]  # Stress 2 CPUs for 5 minutes
+        resources:
+          requests:
+            cpu: "500m"
+          limits:
+            cpu: "500m"

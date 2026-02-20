@@ -1,0 +1,31 @@
+# SMF with canary enabled
+canary:
+  enabled: true
+  weight: 20
+
+replicaCount: 2  # Stable version has more replicas
+
+image:
+  repository: nginx
+  tag: "1.21-alpine"
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 256Mi
+  requests:
+    cpu: 150m
+    memory: 128Mi
+
+smf:
+  config:
+    smfId: "smf-dev-001"
+    plmnId: "20899"
+    upfAddress: "5g-upf:8805"
+    amfAddress: "5g-amf:8888"
+
+labels:
+  environment: development
+  component: smf
+  plane: control

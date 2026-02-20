@@ -1,0 +1,52 @@
+# Default values for 5g-amf
+replicaCount: 2  # AMF typically needs redundancy for high availability
+
+image:
+  repository: nginx
+  tag: "1.21-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8888
+  targetPort: 80
+  # NGAP (N2 interface) port for gNodeB connection
+  ngapPort: 38412
+
+resources:
+  limits:
+    cpu: 600m
+    memory: 768Mi
+  requests:
+    cpu: 300m
+    memory: 384Mi
+
+amf:
+  config:
+    amfId: "amf-001"
+    amfName: "AMF-Region-1"
+    plmnId: "20899"
+    region: "region-1"
+    setId: "001"
+    pointer: "01"
+    guamiList:
+      - plmnId: "20899"
+        amfRegionId: "01"
+        amfSetId: "001"
+        amfPointer: "01"
+    supportedSlices:
+      - sst: 1
+        sd: "000001"
+      - sst: 2
+        sd: "000002"
+    smfAddresses:
+      - "5g-smf:8080"
+    nrfAddress: "nrf-service:8080"
+    ausfAddress: "ausf-service:8080"
+    udmAddress: "udm-service:8080"
+
+labels:
+  component: amf
+  network: 5g-core
+  plane: control
+  tier: access

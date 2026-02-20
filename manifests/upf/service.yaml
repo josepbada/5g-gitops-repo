@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: open5gs-upf-service
+  namespace: telco5g
+  labels:
+    app: open5gs-upf
+    component: upf
+    plane: user
+    tier: core
+    managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: open5gs-upf
+  ports:
+  - name: gtpu-n3
+    port: 2152
+    targetPort: 2152
+    protocol: UDP
+  - name: pfcp-n4
+    port: 8805
+    targetPort: 8805
+    protocol: UDP
+  sessionAffinity: ClientIP

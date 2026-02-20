@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smf-deployment
+  namespace: josepbada-dev
+  labels:
+    app: smf
+    component: 5g-core
+    function: session-management
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: smf
+  template:
+    metadata:
+      labels:
+        app: smf
+        component: 5g-core
+        function: session-management
+    spec:
+      containers:
+      - name: smf
+        image: nginxinc/nginx-unprivileged:latest
+        ports:
+        - containerPort: 8080
+          name: http-api
+          protocol: TCP
+        env:
+        - name: NF_TYPE
+          value: "SMF"
+        - name: SERVICE_NAME
+          value: "Session Management Function"
+        - name: NRF_ENDPOINT
+          value: "http://nrf-service:8080"
+        - name: UPF_ENDPOINT
+          value: "http://upf-service:8084"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "400m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5

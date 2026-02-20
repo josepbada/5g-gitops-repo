@@ -1,0 +1,107 @@
+---
+# iperf3 Server (simulates Data Network - N6 interface)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iperf3-server
+  namespace: 5g-core
+  labels:
+    app: iperf3
+    role: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iperf3
+      role: server
+  template:
+    metadata:
+      labels:
+        app: iperf3
+        role: server
+    spec:
+      containers:
+      - name: iperf3
+        image: networkstatic/iperf3:latest
+        args: ["-s"]  # Run in server mode
+        ports:
+        - containerPort: 5201
+          protocol: TCP
+        - containerPort: 5201
+          protocol: UDP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iperf3-server
+  namespace: 5g-core
+spec:
+  selector:
+    app: iperf3
+    role: server
+  ports:
+  - name: tcp
+    port: 5201
+    targetPort: 5201
+    protocol: TCP
+  - name: udp
+    port: 5201
+    targetPort: 5201
+    protocol: UDP
+
+---
+# iperf3 Client (simulates gNB - N3 interface)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iperf3-client
+  namespace: 5g-core
+  labels:
+    app: iperf3
+    role: client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iperf3
+      role: client
+  template:
+    metadata:
+      labels:
+        app: iperf3
+        role: client
+    spec:
+      containers:
+      - name: iperf3
+        image: networkstatic/iperf3:latest
+        command: ["/bin/sh"]
+        args: ["-c", "sleep infinity"]  # Keep running for manual tests
+        
+---
+# Additional client for parallel testing
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iperf3-client-2
+  namespace: 5g-core
+  labels:
+    app: iperf3
+    role: client-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iperf3
+      role: client-2
+  template:
+    metadata:
+      labels:
+        app: iperf3
+        role: client-2
+    spec:
+      containers:
+      - name: iperf3
+        image: networkstatic/iperf3:latest
+        command: ["/bin/sh"]
+        args: ["-c", "sleep infinity"]

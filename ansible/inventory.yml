@@ -1,0 +1,20 @@
+# Ansible inventory for 5G Telco Cloud Infrastructure
+# This file defines the hosts and groups that Ansible will manage
+
+all:
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: python
+    kubernetes_namespace: telco5g
+    cluster_name: 5g-telco-cluster
+  
+  hosts:
+    localhost:
+      ansible_host: 127.0.0.1
+  
+  children:
+    k8s_cluster:
+      hosts:
+        localhost:
+      vars:
+        kubeconfig_path: "~/.kube/config"

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "amf-5g.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "amf-5g.labels" . | nindent 4 }}
+    app: amf-5g
+    telco.5g/network-function: amf
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "amf-5g.selectorLabels" . | nindent 6 }}
+      app: amf-5g
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        {{- include "amf-5g.selectorLabels" . | nindent 8 }}
+        app: amf-5g
+        telco.5g/network-function: amf
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "amf-5g.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: amf
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: ngap
+          containerPort: {{ .Values.service.ngapPort }}
+          protocol: TCP
+        - name: http
+          containerPort: {{ .Values.service.httpPort }}
+          protocol: TCP
+        env:
+        - name: AMF_NAME
+          value: {{ include "amf-5g.fullname" . }}
+        - name: MCC
+          value: {{ .Values.amfConfig.guami.plmnId.mcc | quote }}
+        - name: MNC
+          value: {{ .Values.amfConfig.guami.plmnId.mnc | quote }}
+        - name: AMF_REGION_ID
+          value: {{ .Values.amfConfig.guami.amfRegionId | quote }}
+        - name: AMF_SET_ID
+          value: {{ .Values.amfConfig.guami.amfSetId | quote }}
+        - name: NETWORK_NAME
+          value: {{ .Values.amfConfig.networkName.full | quote }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        volumeMounts:
+        - name: amf-config
+          mountPath: /etc/amf
+          readOnly: true
+      volumes:
+      - name: amf-config
+        configMap:
+          name: {{ include "amf-5g.fullname" . }}-config

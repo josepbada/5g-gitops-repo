@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: smf-service
+  namespace: telco-core
+  labels:
+    app: smf
+    component: control-plane
+    nf-type: smf
+  annotations:
+    description: Service for SMF SBI, PFCP, and GTP interfaces
+    service-type: network-function-service
+spec:
+  selector:
+    app: smf
+  type: ClusterIP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+  ports:
+    - name: sbi
+      port: 80
+      protocol: TCP
+      targetPort: 7777      # ← CORREGIDO: SMF escucha en 7777, no en 80
+    - name: pfcp
+      port: 8805
+      protocol: UDP
+      targetPort: 8805      # ← Confirmado en logs
+    - name: gtpc
+      port: 2123
+      protocol: UDP
+      targetPort: 2123      # ← Confirmado en logs
+    - name: gtpu
+      port: 2152
+      protocol: UDP
+      targetPort: 2152      # ← Confirmado en logs

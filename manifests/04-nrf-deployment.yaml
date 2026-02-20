@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nrf
+  namespace: open5gs
+  labels:
+    app: nrf
+    component: control-plane
+    function: service-discovery
+    deployment-phase: day0-foundation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nrf
+  template:
+    metadata:
+      labels:
+        app: nrf
+        component: control-plane
+        deployment-phase: day0-foundation
+    spec:
+      containers:
+      - name: nrf
+        image: openverso/open5gs:latest
+        command: ["/opt/open5gs/bin/open5gs-nrfd"]
+        args: ["-c", "/etc/open5gs/nrf.yaml"]
+        ports:
+        - containerPort: 7777
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        volumeMounts:
+        - name: nrf-config
+          mountPath: /etc/open5gs
+        livenessProbe:
+          exec:
+            command: ["pgrep", "open5gs-nrfd"]
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          exec:
+            command: ["pgrep", "open5gs-nrfd"]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: nrf-config
+        configMap:
+          name: nrf-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nrf-service
+  namespace: open5gs
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7777
+    targetPort: 7777
+    protocol: TCP
+  selector:
+    app: nrf

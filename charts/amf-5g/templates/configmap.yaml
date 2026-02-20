@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "amf-5g.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "amf-5g.labels" . | nindent 4 }}
+    app: amf-5g
+data:
+  amf.yaml: |
+    amfName: {{ include "amf-5g.fullname" . }}
+    guami:
+      plmnId:
+        mcc: {{ .Values.amfConfig.guami.plmnId.mcc }}
+        mnc: {{ .Values.amfConfig.guami.plmnId.mnc }}
+      amfRegionId: {{ .Values.amfConfig.guami.amfRegionId }}
+      amfSetId: {{ .Values.amfConfig.guami.amfSetId }}
+      amfPointer: {{ .Values.amfConfig.guami.amfPointer }}
+    servedGuamiList:
+      {{- toYaml .Values.amfConfig.servedGuamiList | nindent 6 }}
+    supportedTAList:
+      {{- toYaml .Values.amfConfig.supportedTAList | nindent 6 }}
+    networkName:
+      full: {{ .Values.amfConfig.networkName.full }}
+      short: {{ .Values.amfConfig.networkName.short }}
+    nfServices:
+      {{- toYaml .Values.amfConfig.nfServices | nindent 6 }}

@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upf
+  namespace: open5gs
+  labels:
+    app: upf
+    component: user-plane
+    function: packet-forwarding
+    deployment-phase: day0-userplane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upf
+  template:
+    metadata:
+      labels:
+        app: upf
+        component: user-plane
+        function: packet-forwarding
+        deployment-phase: day0-userplane
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[
+          {
+            "name": "n3-network",
+            "interface": "n3",
+            "ips": ["10.100.51.20/24"]
+          },
+          {
+            "name": "n4-network",
+            "interface": "n4",
+            "ips": ["10.100.52.20/24"]
+          },
+          {
+            "name": "n6-network",
+            "interface": "n6",
+            "ips": ["10.100.53.20/24"]
+          }
+        ]'
+    spec:
+      containers:
+      - name: upf
+        image: openverso/open5gs:latest
+        command: ["/opt/open5gs/bin/open5gs-upfd"]
+        args: ["-c", "/etc/open5gs/upf.yaml"]
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - NET_ADMIN
+        ports:
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        - containerPort: 8805
+          name: pfcp
+          protocol: UDP
+        - containerPort: 2152
+          name: gtpu
+          protocol: UDP
+        resources:
+          requests:
+            cpu: "300m"
+            memory: "512Mi"
+          limits:
+            cpu: "600m"
+            memory: "1Gi"
+        volumeMounts:
+        - name: upf-config
+          mountPath: /etc/open5gs
+        livenessProbe:
+          exec:
+            command: ["pgrep", "open5gs-upfd"]
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          exec:
+            command: ["pgrep", "open5gs-upfd"]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: upf-config
+        configMap:
+          name: upf-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upf-service
+  namespace: open5gs
+  labels:
+    app: upf
+    component: user-plane
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  - port: 8805
+    targetPort: 8805
+    protocol: UDP
+    name: pfcp
+  - port: 2152
+    targetPort: 2152
+    protocol: UDP
+    name: gtpu
+  selector:
+    app: upf

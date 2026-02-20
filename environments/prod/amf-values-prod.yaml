@@ -1,0 +1,24 @@
+# Production environment overrides for AMF
+replicaCount: 2  # 3 replicas in production for high availability
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 368Mi
+  requests:
+    cpu: 100m
+    memory: 284Mi
+
+amf:
+  config:
+    amfId: "amf-prod-001"
+    amfName: "AMF-Prod-Region-1"
+    region: "prod-region-1"
+    smfAddresses:
+      - "smf-release-5g-smf:8080"
+
+labels:
+  environment: production
+  component: amf
+  plane: control
+  tier: access

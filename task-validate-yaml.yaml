@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: validate-yaml
+  namespace: josepbada-dev
+  labels:
+    component: 5g-core
+    pipeline: deployment
+spec:
+  params:
+  - name: yaml-files
+    type: string
+    description: Space-separated list of YAML files to validate
+  steps:
+  - name: validate
+    image: registry.access.redhat.com/ubi8/ubi:latest
+    script: |
+      #!/bin/bash
+      set -e
+      echo "Installing kubectl..."
+      curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      chmod +x kubectl
+      mv kubectl /usr/local/bin/
+      
+      echo "Validating YAML files..."
+      for file in $(params.yaml-files); do
+        echo "Validating $file..."
+        kubectl apply --dry-run=client -f $file
+      done
+      echo "All YAML files are valid!"

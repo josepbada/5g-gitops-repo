@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: open5gs-amf-service
+  namespace: telco5g
+  labels:
+    app: open5gs-amf
+    component: amf
+    plane: control
+    tier: core
+    managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: open5gs-amf
+  ports:
+  - name: sctp-n2
+    port: 38412
+    targetPort: 38412
+    protocol: SCTP
+  - name: http-mgmt
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  sessionAffinity: ClientIP

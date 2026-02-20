@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smf
+  namespace: telco-core
+  labels:
+    app: smf
+    component: control-plane
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: smf
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: smf
+        component: control-plane
+    spec:
+      containers:
+      - name: smf
+        image: openverso/open5gs:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/opt/open5gs/bin/open5gs-smfd"]
+        args: ["-c", "/etc/open5gs/smf.yaml"]
+        ports:
+        - containerPort: 7777
+          name: sbi
+        - containerPort: 8805
+          name: pfcp
+          protocol: UDP
+        - containerPort: 2123
+          name: gtpc
+          protocol: UDP
+        - containerPort: 2152
+          name: gtpu
+          protocol: UDP
+        env:
+        - name: DB_URI
+          value: "mongodb://mongodb-service:27017/open5gs"
+        resources:
+          requests:
+            memory: "384Mi"
+            cpu: "250m"
+          limits:
+            memory: "768Mi"
+            cpu: "750m"
+        volumeMounts:
+        - name: smf-config
+          mountPath: /etc/open5gs
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "pgrep -f open5gs-smfd"
+          initialDelaySeconds: 45
+          periodSeconds: 20
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "pgrep -f open5gs-smfd"
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          failureThreshold: 3
+      volumes:
+      - name: smf-config
+        configMap:
+          name: smf-config

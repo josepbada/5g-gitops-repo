@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nssf-deployment
+  namespace: josepbada-dev
+  labels:
+    app: nssf
+    component: 5g-core
+    function: slice-selection
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nssf
+  template:
+    metadata:
+      labels:
+        app: nssf
+        component: 5g-core
+        function: slice-selection
+    spec:
+      containers:
+      - name: nssf
+        image: nginxinc/nginx-unprivileged:latest
+        ports:
+        - containerPort: 8080
+          name: http-api
+          protocol: TCP
+        env:
+        - name: NF_TYPE
+          value: "NSSF"
+        - name: SERVICE_NAME
+          value: "Network Slice Selection Function"
+        - name: NRF_ENDPOINT
+          value: "http://nrf-service:8080"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5

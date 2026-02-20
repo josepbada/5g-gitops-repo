@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "5g-upf.fullname" . }}
+  labels:
+    {{- include "5g-upf.labels" . | nindent 4 }}
+    component: {{ .Values.labels.component }}
+    network: {{ .Values.labels.network }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "5g-upf.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "5g-upf.selectorLabels" . | nindent 8 }}
+        component: {{ .Values.labels.component }}
+    spec:
+      containers:
+      - name: upf
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: n3-interface
+          containerPort: {{ .Values.service.targetPort }}
+          protocol: {{ .Values.service.protocol }}
+        env:
+        - name: UPF_ID
+          value: {{ .Values.upf.config.upfId | quote }}
+        - name: N3_INTERFACE
+          value: {{ .Values.upf.config.n3Interface | quote }}
+        - name: N4_INTERFACE
+          value: {{ .Values.upf.config.n4Interface | quote }}
+        - name: N6_INTERFACE
+          value: {{ .Values.upf.config.n6Interface | quote }}
+        - name: DNN
+          value: {{ .Values.upf.config.dnn | quote }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}

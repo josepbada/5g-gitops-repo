@@ -1,0 +1,393 @@
+# 5G Core Network Service Model
+# This model defines a simplified 5G core network for orchestration demonstration
+# Based on Open5GS architecture with minimal components
+
+apiVersion: orchestration.5g/v1
+kind: ServiceModel
+metadata:
+  name: 5g-core-minimal
+  version: "1.0.0"
+  description: "Minimal 5G Core Network for Orchestration Learning"
+  author: "5G Orchestration Project - Week 12"
+  
+spec:
+  # Service Topology - Defines all components and relationships
+  topology:
+    components:
+      # Data Layer - Persistent storage for subscriber data
+      - name: mongodb
+        type: database
+        function: subscriber-data-storage
+        image: mongo:5.0
+        replicas: 1
+        resources:
+          cpu: "100m"
+          memory: "256Mi"
+          storage: "1Gi"
+        interfaces:
+          - name: db-service
+            port: 27017
+            protocol: TCP
+        dependencies: []
+        
+      # Control Plane Network Functions
+      - name: nrf
+        type: network-function
+        function: service-discovery
+        description: "Network Repository Function - Service discovery and registration"
+        image: open5gs/open5gs:latest
+        command: ["open5gs-nrfd"]
+        replicas: 1
+        resources:
+          cpu: "100m"
+          memory: "256Mi"
+        interfaces:
+          - name: sbi
+            type: service-based-interface
+            port: 7777
+            protocol: HTTP/2
+        dependencies:
+          - mongodb
+        configuration:
+          - configMap: nrf-config
+            mountPath: /etc/open5gs/
+            
+      - name: ausf
+        type: network-function
+        function: authentication
+        description: "Authentication Server Function"
+        image: open5gs/open5gs:latest
+        command: ["open5gs-ausfd"]
+        replicas: 1
+        resources:
+          cpu: "100m"
+          memory: "256Mi"
+        interfaces:
+          - name: sbi
+            port: 7777
+            protocol: HTTP/2
+        dependencies:
+          - nrf
+          - mongodb
+        configuration:
+          - configMap: ausf-config
+            mountPath: /etc/open5gs/
+            
+      - name: udm
+        type: network-function
+        function: subscription-management
+        description: "Unified Data Management"
+        image: open5gs/open5gs:latest
+        command: ["open5gs-udmd"]
+        replicas: 1
+        resources:
+          cpu: "100m"
+          memory: "256Mi"
+        interfaces:
+          - name: sbi
+            port: 7777
+            protocol: HTTP/2
+        dependencies:
+          - nrf
+          - mongodb
+        configuration:
+          - configMap: udm-config
+            mountPath: /etc/open5gs/
+            
+      - name: amf
+        type: network-function
+        function: access-mobility-management
+        description: "Access and Mobility Management Function"
+        image: open5gs/open5gs:latest
+        command: ["open5gs-amfd"]
+        replicas: 1
+        resources:
+          cpu: "100m"
+          memory: "256Mi"
+        interfaces:
+          - name: n2
+            type: ngap
+            network: n2-network
+            description: "Interface to RAN"
+          - name: sbi
+            port: 7777
+            protocol: HTTP/2
+        dependencies:
+          - nrf
+          - ausf
+          - udm
+        configuration:
+          - configMap: amf-config
+            mountPath: /etc/open5gs/
+            
+      - name: smf
+        type: network-function
+        function: session-management
+        description: "Session Management Function"
+        image: open5gs/open5gs:latest
+        command: ["open5gs-smfd"]
+        replicas: 1
+        resources:
+          cpu: "100m"
+          memory: "256Mi"
+        interfaces:
+          - name: n4
+            type: pfcp
+            network: n4-network
+            description: "Interface to UPF"
+          - name: sbi
+            port: 7777
+            protocol: HTTP/2
+        dependencies:
+          - nrf
+          - udm
+          - amf
+        configuration:
+          - configMap: smf-config
+            mountPath: /etc/open5gs/
+            
+      # User Plane Network Function
+      - name: upf
+        type: network-function
+        function: user-plane
+        description: "User Plane Function - Data forwarding"
+        image: open5gs/open5gs:latest
+        command: ["open5gs-upfd"]
+        replicas: 1
+        resources:
+          cpu: "600m"
+          memory: "512Mi"
+        interfaces:
+          - name: n3
+            type: gtp
+            network: n3-network
+            description: "Interface to RAN"
+          - name: n4
+            type: pfcp
+            network: n4-network
+            description: "Interface to SMF"
+          - name: n6
+            type: sgi
+            network: n6-network
+            description: "Interface to Data Network"
+        dependencies:
+          - smf
+        configuration:
+          - configMap: upf-config
+            mountPath: /etc/open5gs/
+            
+    # Network Topology - Defines network connections
+    networks:
+      - name: n2-network
+        type: macvlan
+        subnet: "10.100.50.0/24"
+        gateway: "10.100.50.1"
+        description: "N2 interface network (AMF to RAN)"
+        
+      - name: n3-network
+        type: macvlan
+        subnet: "10.100.51.0/24"
+        gateway: "10.100.51.1"
+        description: "N3 interface network (RAN to UPF)"
+        
+      - name: n4-network
+        type: macvlan
+        subnet: "10.100.52.0/24"
+        gateway: "10.100.52.1"
+        description: "N4 interface network (SMF to UPF)"
+        
+      - name: n6-network
+        type: macvlan
+        subnet: "10.100.53.0/24"
+        gateway: "10.100.53.1"
+        description: "N6 interface network (UPF to Internet)"
+        
+  # Deployment Strategy - How the service should be deployed
+  deployment:
+    strategy: rolling-update
+    phases:
+      - name: day0-infrastructure
+        description: "Deploy infrastructure and data layer"
+        order: 1
+        components:
+          - mongodb
+        networks:
+          - n2-network
+          - n3-network
+          - n4-network
+          - n6-network
+        validation:
+          - type: pod-ready
+            timeout: 120s
+          - type: service-accessible
+            endpoint: "mongodb:27017"
+            
+      - name: day0-control-plane-foundation
+        description: "Deploy foundational control plane functions"
+        order: 2
+        components:
+          - nrf
+          - ausf
+          - udm
+        dependencies:
+          - day0-infrastructure
+        validation:
+          - type: pod-ready
+            timeout: 120s
+          - type: nrf-registration
+            
+      - name: day0-control-plane-core
+        description: "Deploy core control plane functions"
+        order: 3
+        components:
+          - amf
+          - smf
+        dependencies:
+          - day0-control-plane-foundation
+        validation:
+          - type: pod-ready
+            timeout: 120s
+          - type: nrf-registration
+          - type: sbi-connectivity
+            
+      - name: day0-user-plane
+        description: "Deploy user plane function"
+        order: 4
+        components:
+          - upf
+        dependencies:
+          - day0-control-plane-core
+        validation:
+          - type: pod-ready
+            timeout: 120s
+          - type: n4-association
+            peer: smf
+            
+  # Configuration Management - Day 1 operations
+  configuration:
+    parameters:
+      plmn:
+        mcc: "001"
+        mnc: "01"
+        description: "Test PLMN for lab environment"
+        
+      amf:
+        tai:
+          tac: "0001"
+        security:
+          integrity: "NIA2"
+          ciphering: "NEA0"
+        capacity:
+          max-ues: 1000
+          
+      smf:
+        dnn: "internet"
+        ue-subnet: "10.45.0.0/16"
+        dns:
+          primary: "8.8.8.8"
+          secondary: "8.8.4.4"
+          
+      upf:
+        dnn: "internet"
+        
+    secrets:
+      - name: subscriber-credentials
+        type: Opaque
+        data:
+          - key: opc
+            value: "63BFA50EE6523365FF14C1F45F88737D"
+          - key: key
+            value: "465B5CE8B199B49FAA5F0A2EE238A6BC"
+            
+  # Lifecycle Policies - Day 2 operations
+  policies:
+    scaling:
+      - component: amf
+        metric: cpu-utilization
+        thresholds:
+          scale-out: 75%
+          scale-in: 30%
+        limits:
+          min-replicas: 1
+          max-replicas: 3
+        cooldown: 300s
+        
+      - component: smf
+        metric: active-sessions
+        thresholds:
+          scale-out: 800
+          scale-in: 200
+        limits:
+          min-replicas: 1
+          max-replicas: 3
+        cooldown: 300s
+        
+    health:
+      - component: all
+        liveness-probe:
+          http-get:
+            path: /health
+            port: sbi
+          initial-delay: 30s
+          period: 10s
+          failure-threshold: 3
+          
+        readiness-probe:
+          http-get:
+            path: /ready
+            port: sbi
+          initial-delay: 15s
+          period: 5s
+          failure-threshold: 3
+          
+    failure-recovery:
+      - component: all
+        restart-policy: Always
+        max-restart-attempts: 3
+        backoff-period: 60s
+        
+      - component: mongodb
+        backup-schedule: "0 2 * * *"
+        retention-days: 7
+        
+    security:
+      - component: all
+        network-policy: default-deny
+        allowed-ingress:
+          - from-components
+          - from-monitoring
+          
+  # Monitoring and Observability
+  observability:
+    metrics:
+      - name: registration-success-rate
+        components: [amf]
+        threshold: 95%
+        alert: critical
+        
+      - name: session-establishment-time
+        components: [smf]
+        threshold: 500ms
+        alert: warning
+        
+      - name: packet-loss
+        components: [upf]
+        threshold: 0.1%
+        alert: critical
+        
+    logging:
+      level: info
+      retention: 7d
+      aggregation: enabled
+      
+    tracing:
+      enabled: true
+      sampling-rate: 10%
+      
+  # Service Level Objectives
+  slo:
+    availability: 99.9%
+    registration-latency: 200ms
+    session-setup-latency: 500ms
+    throughput: 1Gbps
+    max-concurrent-users: 1000

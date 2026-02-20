@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: 5g-upf-blue
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/josepbada/5g-gitops-repo.git
+    targetRevision: main
+    path: helm-charts/5g-upf
+    helm:
+      valueFiles:
+        - ../../environments/dev/upf-values-dev-blue.yaml
+      releaseName: upf-blue
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: telco-5g
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
