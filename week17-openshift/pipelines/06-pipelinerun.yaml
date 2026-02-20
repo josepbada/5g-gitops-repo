@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: 5g-deploy-run-
+  namespace: josepbada-dev
+  labels:
+    project: week17-5g
+spec:
+  pipelineRef:
+    name: 5g-deploy-pipeline
+  params:
+    - name: GIT_URL
+      value: "https://github.com/josepbada/5g-gitops-repo"
+    - name: GIT_REVISION
+      value: "main"
+    - name: NAMESPACE
+      value: "josepbada-dev"
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: pipeline-source-pvc
+  serviceAccountName: 5g-pipeline-sa

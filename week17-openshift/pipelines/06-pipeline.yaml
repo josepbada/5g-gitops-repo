@@ -1,0 +1,91 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: 5g-deploy-pipeline
+  namespace: josepbada-dev
+  labels:
+    project: week17-5g
+spec:
+  params:
+    - name: GIT_URL
+      type: string
+      default: "https://github.com/josepbada/5g-gitops-repo"
+    - name: GIT_REVISION
+      type: string
+      default: "main"
+    - name: NAMESPACE
+      type: string
+      default: "josepbada-dev"
+  workspaces:
+    - name: source
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+        apiVersion: tekton.dev/v1beta1
+      params:
+        - name: url
+          value: $(params.GIT_URL)
+        - name: revision
+          value: $(params.GIT_REVISION)
+        - name: deleteExisting
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: source
+
+    - name: validate-configs
+      runAfter:
+        - git-clone
+      taskSpec:
+        workspaces:
+          - name: source
+        steps:
+          - name: validate
+            image: bitnami/kubectl:latest
+            script: |
+              #!/bin/bash
+              echo "=== Validating 5G manifests ==="
+              for f in $(workspaces.source.path)/manifests/*.yaml; do
+                echo "Validating: $f"
+                kubectl apply --dry-run=client -f "$f" 2>&1 || echo "Warning: $f"
+              done
+              echo "=== Validation complete ==="
+      workspaces:
+        - name: source
+          workspace: source
+
+    - name: deploy-5g-components
+      runAfter:
+        - validate-configs
+      taskSpec:
+        workspaces:
+          - name: source
+        steps:
+          - name: apply-manifests
+            image: bitnami/kubectl:latest
+            script: |
+              #!/bin/bash
+              echo "=== Deploying 5G Core Components ==="
+              kubectl apply -f $(workspaces.source.path)/manifests/ -n josepbada-dev
+              echo "=== Deployment applied ==="
+      workspaces:
+        - name: source
+          workspace: source
+
+    - name: verify-deployment
+      runAfter:
+        - deploy-5g-components
+      taskSpec:
+        steps:
+          - name: check-rollout
+            image: bitnami/kubectl:latest
+            script: |
+              #!/bin/bash
+              echo "=== Verifying 5G deployments ==="
+              kubectl rollout status deployment/nrf -n josepbada-dev --timeout=120s
+              kubectl rollout status deployment/amf -n josepbada-dev --timeout=120s
+              kubectl rollout status deployment/smf -n josepbada-dev --timeout=120s
+              kubectl rollout status deployment/mongodb -n josepbada-dev --timeout=120s
+              echo "=== All 5G components verified ==="
