@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secret
+  namespace: josepbada-dev
+  labels:
+    app: mongodb
+    project: week17-5g
+type: Opaque
+stringData:
+  MONGODB_ADMIN_PASSWORD: open5gs2024
+  MONGODB_USER: open5gs
+  MONGODB_PASSWORD: open5gs2024
+  MONGODB_DATABASE: open5gs
+  MONGODB_URI: "mongodb://open5gs:open5gs2024@mongodb-service:27017/open5gs"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+  namespace: josepbada-dev
+  labels:
+    app: mongodb
+    project: week17-5g
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: josepbada-dev
+  labels:
+    app: mongodb
+    project: week17-5g
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        project: week17-5g
+    spec:
+      containers:
+        - name: mongodb
+          image: registry.access.redhat.com/rhscl/mongodb-36-rhel7:latest
+          ports:
+            - containerPort: 27017
+          envFrom:
+            - configMapRef:
+                name: mongodb-config
+            - secretRef:
+                name: mongodb-secret
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: mongodb-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: josepbada-dev
+  labels:
+    app: mongodb
+    project: week17-5g
+spec:
+  selector:
+    app: mongodb
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017
+  type: ClusterIP

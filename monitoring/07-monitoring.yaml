@@ -1,0 +1,52 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: 5g-core-monitor
+  namespace: josepbada-dev
+  labels:
+    project: week17-5g
+spec:
+  selector:
+    matchLabels:
+      project: week17-5g
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: 5g-alerts
+  namespace: josepbada-dev
+  labels:
+    project: week17-5g
+spec:
+  groups:
+    - name: 5g-core.rules
+      rules:
+        - alert: 5GComponentDown
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="josepbada-dev",
+              deployment=~"nrf|amf|smf|mongodb"
+            } < 1
+          for: 1m
+          labels:
+            severity: critical
+            component: 5g-core
+          annotations:
+            summary: "5G component {{ $labels.deployment }} is down"
+            description: "Deployment {{ $labels.deployment }} in namespace josepbada-dev has 0 available replicas for more than 1 minute."
+        - alert: 5GHighRestartRate
+          expr: |
+            increase(kube_pod_container_status_restarts_total{
+              namespace="josepbada-dev"
+            }[15m]) > 3
+          for: 5m
+          labels:
+            severity: warning
+            component: 5g-core
+          annotations:
+            summary: "High restart rate for 5G pod {{ $labels.pod }}"
+            description: "Pod {{ $labels.pod }} has restarted more than 3 times in the last 15 minutes."
