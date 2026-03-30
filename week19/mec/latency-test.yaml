@@ -1,0 +1,23 @@
+# D:\week19\manifests\mec\latency-test.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ue-test-client
+  namespace: mec-apps
+  labels:
+    app: ue-test-client
+    role: latency-tester
+    project: week19-mec
+spec:
+  containers:
+  - name: test-client
+    image: curlimages/curl:latest
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    resources:
+      requests:
+        memory: "16Mi"
+        cpu: "10m"
+      limits:
+        memory: "32Mi"
+        cpu: "50m"
+  restartPolicy: Always

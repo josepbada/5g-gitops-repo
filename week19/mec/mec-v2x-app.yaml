@@ -1,0 +1,97 @@
+# D:\week19\manifests\mec\mec-v2x-app.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mec-v2x-config
+  namespace: mec-apps
+  labels:
+    app: mec-v2x-server
+    mec-service: v2x
+    project: week19-mec
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head><title>MEC V2X Server</title></head>
+    <body>
+    <h1>5G MEC V2X Server</h1>
+    <p>Edge Site: Barcelona-Edge-Site-1</p>
+    <p>Service: Vehicle-to-Everything (V2X)</p>
+    <p>Max Latency Target: 5ms (Critical V2X)</p>
+    <p>Protocol: C-V2X PC5/Uu — ETSI EN 302 663</p>
+    <p>Use Cases: Collision Avoidance, Traffic Mgmt, Autonomous Driving</p>
+    <p>UPF: upf.5g-edge.svc.cluster.local | DNN: edge-mec</p>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mec-v2x-server
+  namespace: mec-apps
+  labels:
+    app: mec-v2x-server
+    mec-service: v2x
+    project: week19-mec
+    tier: mec
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mec-v2x-server
+  template:
+    metadata:
+      labels:
+        app: mec-v2x-server
+        mec-service: v2x
+        tier: mec
+    spec:
+      containers:
+      - name: v2x-server
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 8080
+          name: v2x-api
+        volumeMounts:
+        - name: mec-v2x-config
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: mec-v2x-config
+        configMap:
+          name: mec-v2x-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mec-v2x-server
+  namespace: mec-apps
+  labels:
+    app: mec-v2x-server
+    mec-service: v2x
+    project: week19-mec
+spec:
+  selector:
+    app: mec-v2x-server
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  - port: 8080
+    targetPort: 8080
+    name: v2x-api

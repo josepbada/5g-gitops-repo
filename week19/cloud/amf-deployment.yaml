@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: amf-config
+  namespace: 5g-cloud
+  labels:
+    app: amf
+    nf-type: AMF
+    project: week19-mec
+data:
+  COMPONENT: "AMF-CloudCore"
+  NRF_URI: "http://nrf.5g-cloud.svc.cluster.local:7777"
+  PLMN_MCC: "001"
+  PLMN_MNC: "01"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amf
+  namespace: 5g-cloud
+  labels:
+    app: amf
+    nf-type: AMF
+    project: week19-mec
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: amf
+  template:
+    metadata:
+      labels:
+        app: amf
+        nf-type: AMF
+    spec:
+      containers:
+      - name: amf
+        image: nginx:alpine
+        ports:
+        - containerPort: 7777
+          name: sbi
+        - containerPort: 38412
+          name: ngap
+          protocol: TCP
+        env:
+        - name: COMPONENT
+          valueFrom:
+            configMapKeyRef:
+              name: amf-config
+              key: COMPONENT
+        - name: NRF_URI
+          valueFrom:
+            configMapKeyRef:
+              name: amf-config
+              key: NRF_URI
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "150m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: amf
+  namespace: 5g-cloud
+  labels:
+    app: amf
+    nf-type: AMF
+    project: week19-mec
+spec:
+  selector:
+    app: amf
+  ports:
+  - port: 7777
+    targetPort: 80
+    name: sbi
+  - port: 38412
+    targetPort: 38412
+    name: ngap
+    protocol: TCP

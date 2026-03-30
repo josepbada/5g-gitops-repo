@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smf-config
+  namespace: 5g-cloud
+  labels:
+    app: smf
+    nf-type: SMF
+    project: week19-mec
+data:
+  COMPONENT: "SMF-CloudCore"
+  NRF_URI: "http://nrf.5g-cloud.svc.cluster.local:7777"
+  UPF_ADDR: "upf.5g-edge.svc.cluster.local"
+  DNN_EDGE: "edge-mec"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smf
+  namespace: 5g-cloud
+  labels:
+    app: smf
+    nf-type: SMF
+    project: week19-mec
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smf
+  template:
+    metadata:
+      labels:
+        app: smf
+        nf-type: SMF
+    spec:
+      containers:
+      - name: smf
+        image: nginx:alpine
+        ports:
+        - containerPort: 7777
+          name: sbi
+        - containerPort: 8805
+          name: pfcp
+          protocol: UDP
+        env:
+        - name: COMPONENT
+          valueFrom:
+            configMapKeyRef:
+              name: smf-config
+              key: COMPONENT
+        - name: UPF_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: smf-config
+              key: UPF_ADDR
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "150m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smf
+  namespace: 5g-cloud
+  labels:
+    app: smf
+    nf-type: SMF
+    project: week19-mec
+spec:
+  selector:
+    app: smf
+  ports:
+  - port: 7777
+    targetPort: 80
+    name: sbi
+  - port: 8805
+    targetPort: 8805
+    name: pfcp
+    protocol: UDP

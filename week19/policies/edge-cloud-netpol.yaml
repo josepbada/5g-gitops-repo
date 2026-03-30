@@ -1,0 +1,174 @@
+# D:\week19\manifests\policies\edge-cloud-netpol.yaml
+
+# Policy 1: Allow SMF (cloud) to send PFCP to UPF — N4 ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-smf-to-upf
+  namespace: 5g-edge
+  labels:
+    project: week19-mec
+spec:
+  podSelector:
+    matchLabels:
+      app: upf
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: 5g-cloud
+      podSelector:
+        matchLabels:
+          app: smf
+    ports:
+    - protocol: UDP
+      port: 8805
+---
+# Policy 2: Allow UPF to send PFCP to SMF — N4 egress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-upf-to-smf
+  namespace: 5g-edge
+  labels:
+    project: week19-mec
+spec:
+  podSelector:
+    matchLabels:
+      app: upf
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: 5g-cloud
+      podSelector:
+        matchLabels:
+          app: smf
+    ports:
+    - protocol: UDP
+      port: 8805
+---
+# Policy 3: Allow UPF to reach MEC applications — N6 egress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-upf-to-mec
+  namespace: 5g-edge
+  labels:
+    project: week19-mec
+spec:
+  podSelector:
+    matchLabels:
+      app: upf
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: mec-apps
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 8080
+---
+# Policy 4: Allow DNS resolution in 5g-edge
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-edge
+  namespace: 5g-edge
+  labels:
+    project: week19-mec
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# Policy 5: Allow MEC apps to receive from UPF and from same namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mec-from-upf
+  namespace: mec-apps
+  labels:
+    project: week19-mec
+spec:
+  podSelector:
+    matchLabels:
+      tier: mec
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: 5g-edge
+      podSelector:
+        matchLabels:
+          app: upf
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: mec-apps
+---
+# Policy 6: Allow DNS resolution in mec-apps
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-mec
+  namespace: mec-apps
+  labels:
+    project: week19-mec
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# Policy 7: Allow ue-test-client egress to mec-apps services
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-testclient-egress
+  namespace: mec-apps
+  labels:
+    project: week19-mec
+spec:
+  podSelector:
+    matchLabels:
+      role: latency-tester
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: mec-apps
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: 5g-cloud
+    ports:
+    - protocol: TCP
+      port: 80
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

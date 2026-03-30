@@ -1,0 +1,97 @@
+# D:\week19\manifests\mec\mec-video-app.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mec-video-config
+  namespace: mec-apps
+  labels:
+    app: mec-video-server
+    mec-service: video-analytics
+    project: week19-mec
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head><title>MEC Video Analytics Server</title></head>
+    <body>
+    <h1>5G MEC Video Analytics</h1>
+    <p>Edge Site: Barcelona-Edge-Site-1</p>
+    <p>Service: Video Analytics for AR/VR</p>
+    <p>Max Latency Target: 10ms (URLLC)</p>
+    <p>UPF: upf.5g-edge.svc.cluster.local</p>
+    <p>DNN: edge-mec | PLMN: 001/01 | SST=1 SD=000001</p>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mec-video-server
+  namespace: mec-apps
+  labels:
+    app: mec-video-server
+    mec-service: video-analytics
+    project: week19-mec
+    tier: mec
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mec-video-server
+  template:
+    metadata:
+      labels:
+        app: mec-video-server
+        mec-service: video-analytics
+        tier: mec
+    spec:
+      containers:
+      - name: video-server
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+          name: http
+        volumeMounts:
+        - name: mec-video-config
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+      volumes:
+      - name: mec-video-config
+        configMap:
+          name: mec-video-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mec-video-server
+  namespace: mec-apps
+  labels:
+    app: mec-video-server
+    mec-service: video-analytics
+    project: week19-mec
+spec:
+  selector:
+    app: mec-video-server
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http

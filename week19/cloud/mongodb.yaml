@@ -1,0 +1,71 @@
+# D:\week19\manifests\cloud\mongodb.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+  namespace: 5g-cloud
+  labels:
+    app: mongodb
+    component: database
+    project: week19-mec
+data:
+  mongod.conf: |
+    net:
+      port: 27017
+      bindIp: 0.0.0.0
+    storage:
+      dbPath: /data/db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: 5g-cloud
+  labels:
+    app: mongodb
+    component: database
+    project: week19-mec
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        component: database
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:4.4
+        ports:
+        - containerPort: 27017
+          name: mongodb
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+        env:
+        - name: MONGO_INITDB_DATABASE
+          value: open5gs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: 5g-cloud
+  labels:
+    app: mongodb
+    project: week19-mec
+spec:
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+    name: mongodb
+  clusterIP: None
