@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: udm-html
+  namespace: 5g-core
+data:
+  index.html: |
+    UDM: 5G Unified Data Management - Subscriber DB Active
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: udm
+  namespace: 5g-core
+  labels:
+    app: udm
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: udm
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: udm
+        version: v1
+    spec:
+      containers:
+      - name: udm
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: html
+        configMap:
+          name: udm-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: udm-service
+  namespace: 5g-core
+  labels:
+    app: udm
+spec:
+  selector:
+    app: udm
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  type: ClusterIP

@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: amf-v2-html
+  namespace: 5g-core
+data:
+  index.html: |
+    AMF-v2: 5G Access and Mobility Function - Canary Release (v2)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amf-v2
+  namespace: 5g-core
+  labels:
+    app: amf
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: amf
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: amf
+        version: v2
+    spec:
+      containers:
+      - name: amf
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: html
+        configMap:
+          name: amf-v2-html
