@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: amf-canary
+  namespace: 5g-core
+spec:
+  hosts:
+  - amf-service
+  http:
+  - name: canary-routing
+    route:
+    - destination:
+        host: amf-service
+        subset: v1
+      weight: 90
+    - destination:
+        host: amf-service
+        subset: v2
+      weight: 10
