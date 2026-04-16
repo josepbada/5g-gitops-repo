@@ -1,4 +1,4 @@
-apiVersion: security.istio.io/v1beta1
+﻿apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: smf-allow-amf-only
@@ -13,10 +13,6 @@ spec:
     - source:
         principals:
         - "cluster.local/ns/5g-core/sa/default"
-    when:
-    - key: source.labels[app]
-      values:
-      - amf
     to:
     - operation:
         methods:
