@@ -1,0 +1,181 @@
+# free5gc-values.yaml
+# Helm values for towards5gs/free5gc chart.
+# All NFs are deployed in the free5gc namespace.
+# MongoDB connection uses the Service name "mongodb" deployed above.
+# Multus multi-network is disabled; all interfaces use the pod's
+# default eth0 interface, which is sufficient for this lab.
+
+global:
+  name: free5gc
+  userPlaneArchitecture: single
+  nrf:
+    service:
+      name: nrf-nnrf
+      type: ClusterIP
+      port: "8000"
+      nodePort: "30800"
+  sbi:
+    scheme: http
+  # All network interface settings below use eth0 (Minikube's default).
+  # In production these would map to dedicated NICs via Multus CNI.
+  n2network:
+    name: n2network
+    masterIf: eth0
+    subnetIP: "10.100.50.248"
+    cidr: "29"
+    gatewayIP: "10.100.50.254"
+    excludeIP: "10.100.50.254"
+  n3network:
+    name: n3network
+    masterIf: eth0
+    subnetIP: "10.100.50.232"
+    cidr: "29"
+    gatewayIP: "10.100.50.238"
+    excludeIP: "10.100.50.238"
+  n4network:
+    name: n4network
+    masterIf: eth0
+    subnetIP: "10.100.50.240"
+    cidr: "29"
+    gatewayIP: "10.100.50.246"
+    excludeIP: "10.100.50.246"
+  n6network:
+    name: n6network
+    masterIf: eth0
+    subnetIP: "10.100.100.0"
+    cidr: "24"
+    gatewayIP: "10.100.100.1"
+    excludeIP: "10.100.100.254"
+  n9network:
+    name: n9network
+    masterIf: eth0
+    subnetIP: "10.100.50.224"
+    cidr: "29"
+    gatewayIP: "10.100.50.230"
+    excludeIP: "10.100.50.230"
+
+# Disable Multus network-attachment-definitions (not available in Docker driver)
+free5gc-nrf:
+  enabled: true
+  db:
+    url: mongodb://mongodb:27017
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+free5gc-ausf:
+  enabled: true
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+free5gc-udm:
+  enabled: true
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+free5gc-udr:
+  enabled: true
+  db:
+    url: mongodb://mongodb:27017
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+free5gc-amf:
+  enabled: true
+  configuration:
+    amfName: AMF
+    ngapIpList:
+      - "0.0.0.0"
+    sbi:
+      registerIPv4: free5gc-amf
+      bindingIPv4: "0.0.0.0"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+free5gc-smf:
+  enabled: true
+  db:
+    url: mongodb://mongodb:27017
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+free5gc-upf:
+  enabled: true
+  upf:
+    config:
+      upfcfg.yaml:
+        gtpu:
+          forwarder: af_packet
+  resources:
+    requests:
+      cpu: "150m"
+      memory: "256Mi"
+    limits:
+      cpu: "400m"
+      memory: "512Mi"
+
+free5gc-pcf:
+  enabled: true
+  db:
+    url: mongodb://mongodb:27017
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+free5gc-nssf:
+  enabled: true
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+free5gc-webui:
+  enabled: true
+  db:
+    url: mongodb://mongodb:27017
+  service:
+    type: NodePort
+    nodePort: "30500"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
