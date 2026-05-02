@@ -1,0 +1,258 @@
+# network-policies.yaml
+# Calico NetworkPolicies for the free5GC 5G Core deployment.
+# Pattern used throughout:
+#   - A "default-deny" policy blocks all traffic to/from the namespace.
+#   - Individual policies then open only the ports each NF legitimately needs.
+# This matches production 5G Core security requirements.
+
+# ── DEFAULT DENY ALL in free5gc namespace ─────────────────────────────────────
+# This policy selects ALL pods in the namespace (empty podSelector)
+# and blocks all ingress and egress traffic by default.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: free5gc
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# ── Allow DNS for all pods in free5gc ─────────────────────────────────────────
+# Every pod needs to resolve Kubernetes Service names like "mongodb" or
+# "free5gc-nrf". This policy allows all pods to reach kube-dns on UDP port 53.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: free5gc
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# ── MongoDB: allow NFs to connect to it ───────────────────────────────────────
+# NRF, UDR, SMF, PCF, WebUI all read/write MongoDB on port 27017.
+# The ingress rule below allows any pod in the free5gc namespace to reach
+# MongoDB. In production you would list each NF's labels individually.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mongodb-access
+  namespace: free5gc
+spec:
+  podSelector:
+    matchLabels:
+      app: mongodb
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: free5gc
+      ports:
+        - port: 27017
+          protocol: TCP
+
+---
+# ── NRF: allow all NFs to register and discover on port 8000 ──────────────────
+# The NRF is the "directory" of the 5G Core. Every NF registers itself here
+# and queries it to discover addresses of other NFs. Port 8000 is the SBI port.
+# The ueransim namespace is NOT allowed here — gNB/UE do not talk to NRF.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-nrf-sbi
+  namespace: free5gc
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: free5gc-nrf
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: free5gc
+      ports:
+        - port: 8000
+          protocol: TCP
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: mongodb
+      ports:
+        - port: 27017
+          protocol: TCP
+
+---
+# ── AMF: allow N2 from gNB (ueransim namespace) and SBI to other NFs ──────────
+# The AMF receives NGAP control messages from the gNB on port 38412 (SCTP).
+# It also communicates with AUSF, UDM, NRF, SMF via SBI on port 8000.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-amf-traffic
+  namespace: free5gc
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: free5gc-amf
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # N2: gNB connects to AMF on SCTP 38412
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ueransim
+      ports:
+        - port: 38412
+          protocol: SCTP
+    # SBI: other NFs call AMF on HTTP/2
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: free5gc
+      ports:
+        - port: 80
+          protocol: TCP
+  egress:
+    # SBI outgoing: AMF registers with NRF and calls AUSF/SMF/UDM
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: free5gc
+      ports:
+        - port: 8000
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+
+---
+# ── SMF: allow N4 to UPF and SBI to other NFs ─────────────────────────────────
+# SMF sends PFCP session rules to UPF on port 8805 UDP (N4 interface).
+# SMF also receives calls from AMF via SBI and talks to NRF/PCF.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-smf-traffic
+  namespace: free5gc
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: free5gc-smf
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: free5gc
+      ports:
+        - port: 80
+          protocol: TCP
+  egress:
+    # N4: SMF → UPF PFCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: free5gc-upf
+      ports:
+        - port: 8805
+          protocol: UDP
+    # SBI outgoing
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: free5gc
+      ports:
+        - port: 8000
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+    # MongoDB
+    - to:
+        - podSelector:
+            matchLabels:
+              app: mongodb
+      ports:
+        - port: 27017
+          protocol: TCP
+
+---
+# ── UPF: allow N3 from gNB and N4 from SMF ────────────────────────────────────
+# UPF receives GTP-U user-data tunnels from gNB on port 2152 UDP (N3).
+# UPF receives PFCP session rules from SMF on port 8805 UDP (N4).
+# UPF also needs egress to the Internet (N6) — allowed to any destination.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-upf-traffic
+  namespace: free5gc
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: free5gc-upf
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # N3: GTP-U from gNB
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ueransim
+      ports:
+        - port: 2152
+          protocol: UDP
+    # N4: PFCP from SMF
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: free5gc-smf
+      ports:
+        - port: 8805
+          protocol: UDP
+  egress:
+    # N6: allow all egress (UPF routes user traffic to internet)
+    - {}
+
+---
+# ── Allow monitoring namespace to scrape metrics ──────────────────────────────
+# Prometheus lives in the monitoring namespace and needs to scrape /metrics
+# from each NF on port 8080 (or whatever metrics port free5GC exposes).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: free5gc
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8080
+          protocol: TCP
+        - port: 9090
+          protocol: TCP
