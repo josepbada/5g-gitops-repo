@@ -1,0 +1,23 @@
+# servicemonitor-free5gc.yaml
+# This ServiceMonitor tells Prometheus to scrape the /metrics endpoint
+# of every Service in the free5gc namespace that has the label
+# "prometheus.io/scrape: true".
+# free5GC NFs expose metrics on port 8080 by default.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: free5gc-nfs
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - free5gc
+  selector:
+    matchLabels:
+      app.kubernetes.io/managed-by: Helm
+  endpoints:
+    - port: "metrics"
+      path: /metrics
+      interval: 15s

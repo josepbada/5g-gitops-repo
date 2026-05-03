@@ -1,0 +1,54 @@
+# prometheus-values.yaml
+# Values for kube-prometheus-stack.
+# Memory is kept tight to fit within our 4 000 MB Minikube node.
+# Grafana is exposed via NodePort 30300 so you can open it in your browser.
+
+prometheus:
+  prometheusSpec:
+    # Keep only 6 hours of data (saves memory on our small node)
+    retention: 6h
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "400m"
+        memory: "512Mi"
+    # Allow Prometheus to discover ServiceMonitors from any namespace
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector: {}
+
+grafana:
+  enabled: true
+  adminPassword: "5GLabPass!"
+  service:
+    type: NodePort
+    nodePort: 30300
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+  # Pre-load free5GC dashboards from the grafana.com gallery
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: "5gc"
+          orgId: 1
+          folder: "5G Core"
+          type: file
+          disableDeletion: false
+          options:
+            path: /var/lib/grafana/dashboards/5gc
+
+# Disable components we don't need (saves ~400 MB)
+alertmanager:
+  enabled: false
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
